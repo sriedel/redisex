@@ -1,4 +1,17 @@
 defmodule RedisEx.Proto do
+  @moduledoc """
+    This module supplies methods to convert to and from the redis "unified"
+    protocol. 
+    
+    See http://www.redis.io/topics/protocol for protocol details.
+  """
+
+  @doc """
+  Converts a list into the redis unified multi bulk format. It is assumed that
+  the list elements are command strings and arguments (strings or binaries), 
+  so that when the resulting unified message string is sent to redis, 
+  it will know what to do with it.
+  """
   def to_proto( [] ), do: ""
   def to_proto( command_list ) when is_list( command_list ) do
     _to_proto( command_list, "*" <> to_binary( length( command_list ) ) <> "\r\n" )
@@ -14,6 +27,14 @@ defmodule RedisEx.Proto do
     "$" <> to_binary( byte_size( arg ) ) <> "\r\n" <> arg <> "\r\n"
   end
 
+  @doc """
+  Given a redis unified response message, this function will extract the payload
+  and will return one of the following:
+
+  { :error, { :error_type, error_message } },
+  { :ok, response }
+  { :ok, [ response, list, for, multi, commands ] }
+  """
   def from_proto( message ) do
     { token, rest } = next_token( message )
     { payload, rest } = extract_payload( token, rest )

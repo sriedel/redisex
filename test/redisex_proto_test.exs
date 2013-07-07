@@ -41,6 +41,7 @@ defmodule RedisExProtoTest do
     assert from_proto( "*5\r\n:1\r\n:2\r\n:3\r\n:4\r\n:5\r\n" ) == { :ok, [1,2,3,4,5] }
     assert from_proto( "*2\r\n$3\r\nfoo\r\n$4\r\nquux\r\n" ) == { :ok, [ "foo", "quux" ] }
     assert from_proto( "*3\r\n:4\r\n$3\r\nfoo\r\n+OK\r\n" ) == { :ok, [ 4, "foo", "OK" ] }
+    assert from_proto( "*3\r\n$3\r\nfoo\r\n$-1\r\n$3\r\nbar\r\n" ) == { :ok, [ "foo", nil, "bar" ] }
   end
 end
 
