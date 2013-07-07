@@ -22,8 +22,8 @@ defmodule RedisEx.Proto do
     _to_proto( rest, acc <> to_argument( command ) )
   end
 
-  def to_argument(""), do: ""
-  def to_argument( arg ) do
+  defp to_argument(""), do: ""
+  defp to_argument( arg ) do
     "$" <> to_binary( byte_size( arg ) ) <> "\r\n" <> arg <> "\r\n"
   end
 
@@ -34,6 +34,8 @@ defmodule RedisEx.Proto do
   { :error, { :error_type, error_message } },
   { :ok, response }
   { :ok, [ response, list, for, multi, commands ] }
+
+  :error_type is a lowercase atom of the redis error type returned.
   """
   def from_proto( message ) do
     { token, rest } = next_token( message )
@@ -41,28 +43,28 @@ defmodule RedisEx.Proto do
     construct_reply( payload )
   end
 
-  def construct_reply( payload ) when is_tuple( payload ), do: { :error, payload }
-  def construct_reply( payload ), do: { :ok, payload }
+  defp construct_reply( payload ) when is_tuple( payload ), do: { :error, payload }
+  defp construct_reply( payload ), do: { :ok, payload }
 
-  def extract_payload( <<?-, remainder::binary>>, message_rest ) do
+  defp extract_payload( <<?-, remainder::binary>>, message_rest ) do
     error_contents = String.split( remainder, %r{\s+}, global: false )
     { payload, rest } = extract_error_payload( error_contents, message_rest )
   end
 
-  def extract_payload( <<?+, remainder::binary>>, message_rest ) do
+  defp extract_payload( <<?+, remainder::binary>>, message_rest ) do
     { remainder, message_rest }
   end
 
-  def extract_payload( <<?:, remainder::binary>>, message_rest ) do
+  defp extract_payload( <<?:, remainder::binary>>, message_rest ) do
     { binary_to_integer( remainder ), message_rest }
   end
 
-  def extract_payload( <<?$, remainder::binary>>, message_rest ) do
+  defp extract_payload( <<?$, remainder::binary>>, message_rest ) do
     payload_bytesize = binary_to_integer( remainder )
     extract_bulk_payload( payload_bytesize, message_rest )
   end
 
-  def extract_payload( <<?*, remainder::binary>>, message_rest ) do
+  defp extract_payload( <<?*, remainder::binary>>, message_rest ) do
     payload_count = binary_to_integer( remainder )
     extract_multi_payloads( payload_count, message_rest, [] )
   end
