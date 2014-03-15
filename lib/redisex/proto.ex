@@ -14,7 +14,7 @@ defmodule RedisEx.Proto do
   """
   def to_proto( [] ), do: ""
   def to_proto( command_list ) when is_list( command_list ) do
-    _to_proto( command_list, "*" <> to_binary( length( command_list ) ) <> "\r\n" )
+    _to_proto( command_list, "*#{length( command_list )}\r\n" )
   end
 
   defp _to_proto( [], acc ), do: acc
@@ -22,9 +22,9 @@ defmodule RedisEx.Proto do
     _to_proto( rest, acc <> to_argument( command ) )
   end
 
-  defp to_argument(""), do: ""
-  defp to_argument( arg ) do
-    "$" <> to_binary( byte_size( arg ) ) <> "\r\n" <> arg <> "\r\n"
+  def to_argument(""), do: ""
+  def to_argument( arg ) do
+    "$#{byte_size( arg )}\r\n#{arg}\r\n"
   end
 
   @doc """
@@ -39,7 +39,7 @@ defmodule RedisEx.Proto do
   """
   def from_proto( message ) do
     { token, rest } = next_token( message )
-    { payload, rest } = extract_payload( token, rest )
+    { payload, _ } = extract_payload( token, rest )
     construct_reply( payload )
   end
 
@@ -48,7 +48,7 @@ defmodule RedisEx.Proto do
 
   defp extract_payload( <<?-, remainder::binary>>, message_rest ) do
     error_contents = String.split( remainder, %r{\s+}, global: false )
-    { payload, rest } = extract_error_payload( error_contents, message_rest )
+    extract_error_payload( error_contents, message_rest )
   end
 
   defp extract_payload( <<?+, remainder::binary>>, message_rest ) do
@@ -81,7 +81,7 @@ defmodule RedisEx.Proto do
     String.downcase( error_type ) |> binary_to_atom
   end
 
-  defp extract_multi_payloads( -1, message_rest, acc ), do: { nil, message_rest }
+  defp extract_multi_payloads( -1, message_rest, _acc ), do: { nil, message_rest }
   defp extract_multi_payloads(  0, message_rest, acc ), do: { Enum.reverse( acc ), message_rest }
   defp extract_multi_payloads( payload_count, message_rest, acc ) do
     { token, rest } = next_token( message_rest )
