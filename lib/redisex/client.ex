@@ -1,7 +1,6 @@
 defmodule RedisEx.Client do
   #TODO: Unit test
   alias RedisEx.Connection
-  import RedisEx.Commands.Keys
 
   defrecord Client, socket: nil
 
@@ -34,7 +33,7 @@ defmodule RedisEx.Client do
   def keys( client, pattern ), do: true
   def migrate( client, host, port, key, db, timeout, opts \\ [] ), do: true
   def move( client, key, db ), do: true
-  def object( client, subcommand, arguments ) when subcommand inlist [:REFCOUNT, :ENCODING, :IDLETIME], do: true
+  def object( client, subcommand, arguments ) when subcommand in [:REFCOUNT, :ENCODING, :IDLETIME], do: true
   def persist( client, key ), do: true
   def pexpire( client, key, milliseconds ), do: true
   def pexpireat( client, key, millisecond_timestamp ), do: true
@@ -53,8 +52,8 @@ defmodule RedisEx.Client do
   def bitcount( client, key ), do: true
   def bitcount( client, key, start ), do: true
   def bitcount( client, key, range_start, range_end ), do: true
-  def bitop( client, op, destkey, key ) when op inlist [:AND, :OR, :XOR, :NOT] and is_binary( key ), do: true
-  def bitop( client, op, destkey, key_list ) when op inlist [:AND, :OR, :XOR, :NOT] and is_list( key_list) , do: true
+  def bitop( client, op, destkey, key ) when op in [:AND, :OR, :XOR, :NOT] and is_binary( key ), do: true
+  def bitop( client, op, destkey, key_list ) when op in [:AND, :OR, :XOR, :NOT] and is_list( key_list) , do: true
   def bitpos( client, key, bit ), do: true
   def bitpos( client, key, bit, start ), do: true
   def bitpos( client, key, bit, start, range_end ), do: true
@@ -213,7 +212,7 @@ defmodule RedisEx.Client do
   def dbsize( client ), do: true
   def flushall( client ), do: true
   def flushdb( client ), do: true
-  def info( client, section \\ :default ) when section inlist [ :server, :clients, :memory, :persistence, :stats, :replication, :cpu, :commandstats, :cluster, :keyspace, :all, :default ], do: true
+  def info( client, section \\ :default ) when section in [ :server, :clients, :memory, :persistence, :stats, :replication, :cpu, :commandstats, :cluster, :keyspace, :all, :default ], do: true
   def lastsave( client ), do: true
   def save( client ), do: true
   def shutdown( client ), do: true
