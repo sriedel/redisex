@@ -1,3 +1,3 @@
 # RedisEx
 
-** TODO: Add description **
+A simple Redis connector for Elixir
