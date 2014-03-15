@@ -18,7 +18,8 @@ defmodule RedisEx.Connection do
     { :ok, socket } = :gen_tcp.connect( host, 
                                         port,
                                         [ :binary, 
-                                          { :packet, 0 },
+                                          { :packet, :line },
+                                          { :packet_size, 10_000_000 },
                                           { :active, false } ] )
     socket
   end
