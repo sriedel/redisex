@@ -21,28 +21,187 @@ defmodule RedisEx.Client do
   end
 
   # Key Commands
-  def del( _client, _key ), do: true
-  def del( _client, _key_list ), do: true
-  def dump( _client, _key ), do: true
-  def exists( _client, _key ), do: true
-  def expire( _client, _key, _seconds ), do: true
-  def expireat( _client, _key, _timestamp ), do: true
-  def keys( _client, _pattern ), do: true
-  def migrate( _client, _host, _port, _key, _db, _timeout, _opts \\ [] ), do: true
-  def move( _client, _key, _db ), do: true
-  def object( _client, subcommand, _arguments ) when subcommand in [:REFCOUNT, :ENCODING, :IDLETIME], do: true
-  def persist( _client, _key ), do: true
-  def pexpire( _client, _key, _milliseconds ), do: true
-  def pexpireat( _client, _key, _millisecond_timestamp ), do: true
-  def pttl( _client, _key ), do: true
-  def random_key( _client ), do: true
-  def rename( _client, _key, _newkey ), do: true
-  def renamenx( _client, _key, _newkey ), do: true
-  def restore( _client, _key, _ttl, _serialized__value ), do: true
-  def scan( _client, _cursor, _opts \\ [] ), do: true
-  def sort( _client, _key, _opts \\ [] ), do: true
-  def ttl( _client, _key ), do: true
-  def type( _client, _key ), do: true
+  def del( connection_handle, key )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) do
+    command_list = [ "DEL", key ]
+    Connection.process( connection_handle.handle, command_list )
+  end
+
+  def del( connection_handle, key_list )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_list( key_list ) 
+       and length( key_list ) > 0 do
+    command_list = [ "DEL" | key_list ]
+    Connection.process( connection_handle.handle, command_list )
+  end
+
+  def dump( connection_handle, key )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) do
+    command_list = [ "DUMP", key ]
+    Connection.process( connection_handle.handle, command_list )
+  end
+
+  def exists( connection_handle, key )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) do
+    command_list = [ "EXISTS", key ]
+    Connection.process( connection_handle.handle, command_list )
+  end
+
+  def expire( connection_handle, key, seconds )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) 
+       and is_integer( seconds ) 
+       and seconds >= 0 do
+    command_list = [ "EXPIRE", key, seconds ]
+    Connection.process( connection_handle.handle, command_list )
+  end
+
+  def expireat( connection_handle, key, timestamp )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) 
+       and is_integer( timestamp ) do
+    command_list = [ "EXPIREAT", key, timestamp ]
+    Connection.process( connection_handle.handle, command_list )
+  end
+
+  def keys( connection_handle, pattern )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( pattern ) do
+    command_list = [ "KEYS", pattern ]
+    Connection.process( connection_handle.handle, command_list )
+  end
+
+  #TODO: Implement COPY
+  #TODO: Implement REPLACE
+  def migrate( connection_handle, host, port, key, db, timeout, opts \\ [] )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( host )
+       and is_binary( port )
+       and is_binary( key )
+       and is_integer( db )
+       and db >= 0
+       and is_integer( timeout )
+       and timeout >= 0 do
+    command_list = [ "MIGRATE", host, port, key, db, timeout ]
+    Connection.process( connection_handle.handle, command_list )
+  end
+
+  def move( connection_handle, key, db )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) 
+       and is_integer( db ) 
+       and db >= 0 do
+    command_list = [ "MOVE", key, db ]
+    Connection.process( connection_handle.handle, command_list )
+  end
+
+  def object( connection_handle, subcommand, arguments ) 
+      when is_record( connection_handle, ConnectionHandle )
+       and subcommand in [:REFCOUNT, :ENCODING, :IDLETIME]
+       and is_list( arguments ) do
+    command_list = [ "OBJECT", atom_to_binary( subcommand ) | arguments ]
+    Connection.process( connection_handle.handle, command_list )
+  end
+
+  def persist( connection_handle, key )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) do
+    command_list = [ "PERSIST", key ]
+    Connection.process( connection_handle.handle, command_list )
+  end
+
+  def pexpire( connection_handle, key, milliseconds )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) 
+       and is_integer( milliseconds ) 
+       and milliseconds > 0 do
+    command_list = [ "PEXPIRE", key, milliseconds ]
+    Connection.process( connection_handle.handle, command_list )
+  end
+
+  def pexpireat( connection_handle, key, millisecond_timestamp )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) 
+       and is_integer( millisecond_timestamp ) 
+       and millisecond_timestamp > 0 do
+    command_list = [ "PEXPIREAT", key, millisecond_timestamp ]
+    Connection.process( connection_handle.handle, command_list )
+  end
+
+  def pttl( connection_handle, key )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) do
+    command_list = [ "PTTL", key ]
+    Connection.process( connection_handle.handle, command_list )
+  end
+  def randomkey( connection_handle )
+      when is_record( connection_handle, ConnectionHandle ) do
+    command_list = "RANDOMKEY"
+    Connection.process( connection_handle.handle, command_list )
+  end
+
+  def rename( connection_handle, key, newkey )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) 
+       and is_binary( newkey ) do
+    command_list = [ "RENAME", key, newkey ]
+    Connection.process( connection_handle.handle, command_list )
+  end
+
+  def renamenx( connection_handle, key, newkey )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) 
+       and is_binary( newkey ) do
+    command_list = [ "RENAMENX", key, newkey ]
+    Connection.process( connection_handle.handle, command_list )
+  end
+
+  def restore( connection_handle, key, ttl, serialized_value )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_integer( ttl )
+       and ttl >= 0
+       and is_binary( key ) 
+       and is_binary( serialized_value ) do
+    command_list = [ "RESTORE", key, ttl, serialized_value ]
+    Connection.process( connection_handle.handle, command_list )
+  end
+
+  #TODO: Implement this
+  # def scan( connection_handle, cursor, opts \\ [] )
+  #     when is_record( connection_handle, ConnectionHandle )
+  #      and is_binary( key ) do
+  #   Connection.process( connection_handle.handle, command_list )
+  # end
+
+  #TODO: Implement BY
+  #TODO: Implement LIMIT
+  #TODO: Implement GET
+  #TODO: Implement ASC/DESC
+  #TODO: Implement ALPHA
+  #TODO: Implement STORE
+  def sort( connection_handle, key, opts \\ [] )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) do
+    command_list = [ "SORT", key ]
+    Connection.process( connection_handle.handle, command_list )
+  end
+
+  def ttl( connection_handle, key )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) do
+    command_list = [ "TTL", key ]
+    Connection.process( connection_handle.handle, command_list )
+  end
+
+  def type( connection_handle, key )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) do
+    command_list = [ "TYPE", key ]
+    Connection.process( connection_handle.handle, command_list )
+  end
 
   # String Commands
   def append( connection_handle, key, value ) 
