@@ -139,8 +139,12 @@ defmodule RedisEx.Connection do
                         SYNC
                         TIME
                       ]
+  
+  def start_link( args, opts \\ [] ) do
+    :gen_server.start_link( __MODULE__, args, opts )
+  end
 
-  def init( [ hostname, port ] ) when is_binary( hostname ) 
+  def init( [ hostname: hostname, port: port ] ) when is_binary( hostname ) 
                                   and is_integer( port ) 
                                   and port in ( 0..65535 ) do
     socket = connect( hostname, port )

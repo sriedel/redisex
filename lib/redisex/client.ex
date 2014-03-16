@@ -1,6 +1,7 @@
 defmodule RedisEx.Client do
   #TODO: Unit test
   alias RedisEx.Connection
+  alias RedisEx.ConnectionSupervisor
 
   defrecord ConnectionHandle, handle: nil
 
@@ -11,11 +12,12 @@ defmodule RedisEx.Client do
 
   def connect( hostname, port ) when is_binary( hostname )
                                  and is_integer( port ) do
-    ConnectionHandle.new( handle: Connection.start_link( [ hostname, port ] ) )
+     server_pid = ConnectionSupervisor.add_connection( [ hostname: hostname, port: port ] )
+    ConnectionHandle.new( handle: server_pid )
   end
 
   def disconnect( client ) do
-    Connection.disconnect( client.socket )
+    ConnectionSupervisor.remove_connection( client.handle )
   end
 
   # Key Commands

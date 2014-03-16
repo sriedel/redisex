@@ -9,7 +9,8 @@ defmodule RedisEx.Mixfile do
 
   # Configuration for the OTP application
   def application do
-    []
+    [ mod: { RedisEx, [] },
+      registered: [ :redisex_connection_supervisor ] ]
   end
 
   # Returns the list of dependencies in the format:
