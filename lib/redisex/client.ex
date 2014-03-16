@@ -176,23 +176,41 @@ defmodule RedisEx.Client do
     Connection.process( connection_handle.handle, command_list )
   end
 
-  #TODO: Implement this
-  # def scan( connection_handle, cursor, opts \\ [] )
-  #     when is_record( connection_handle, ConnectionHandle )
-  #      and is_binary( key ) do
-  #   Connection.process( connection_handle.handle, command_list )
-  # end
+  def scan( connection_handle, cursor, opts \\ [] )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( cursor ) do
+    opt_list = []
+    if :count in opts, do: opt_list = [ "COUNT", opts[:count] | opt_list ]
+    if :match in opts, do: opt_list = [ "MATCH", opts[:match] | opt_list ]
 
-  #TODO: Implement BY
-  #TODO: Implement LIMIT
-  #TODO: Implement GET
-  #TODO: Implement ASC/DESC
-  #TODO: Implement ALPHA
-  #TODO: Implement STORE
+    command_list = [ "SCAN", cursor | opt_list ]
+    Connection.process( connection_handle.handle, command_list )
+  end
+
   def sort( connection_handle, key, opts \\ [] )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) do
-    command_list = [ "SORT", key ]
+
+    opt_list = []
+    if :store in opts, do: opt_list = [ "STORE", opts[:store] | opt_list ]
+    if :alpha in opts, do: opt_list = [ "ALPHA" | opt_list ]
+    if :asc   in opts, do: opt_list = [ "ASC" | opt_list ]
+    if :desc  in opts, do: opt_list = [ "DESC" | opt_list ]
+
+    if :get in opts do
+      get_list = Enum.map( opts[:get], fn(e) -> [ "GET", e ] end )
+      opt_list = :lists.append( get_list, opt_list )
+    end
+
+    if :limit in opts do
+      [ offset, limit ] = opts[:limit]
+      opt_list = [ "LIMIT", offset, limit | opt_list ]
+    end
+
+    if :by in opts, do: opt_list = [ "BY", opts[:by] | opt_list ]
+
+
+    command_list = [ "SORT", key | opt_list ]
     Connection.process( connection_handle.handle, command_list )
   end
 
@@ -533,13 +551,17 @@ defmodule RedisEx.Client do
     Connection.process( connection_handle.handle, command_list )
   end
 
-  # TODO: Implement this
-  # def hscan( connection_handle, key, cursor, opts \\ [])
-  #     when is_record( connection_handle, ConnectionHandle )
-  #      and is_binary( key ) do
-  #   command_list = []
-  #   Connection.process( connection_handle.handle, command_list )
-  # end
+  def hscan( connection_handle, key, cursor, opts \\ [] )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key )
+       and is_binary( cursor ) do
+    opt_list = []
+    if :count in opts, do: opt_list = [ "COUNT", opts[:count] | opt_list ]
+    if :match in opts, do: opt_list = [ "MATCH", opts[:match] | opt_list ]
+
+    command_list = [ "HSCAN", cursor | opt_list ]
+    Connection.process( connection_handle.handle, command_list )
+  end
 
   def hset( connection_handle, key, field, value )
       when is_record( connection_handle, ConnectionHandle )
@@ -822,13 +844,17 @@ defmodule RedisEx.Client do
     Connection.process( connection_handle.handle, command_list )
   end
 
-  #TODO: Implement this
-  # def sscan( connection_handle, key, cursor, opts \\ [] )
-  #     when is_record( connection_handle, ConnectionHandle )
-  #      and is_binary( key ) do
-  #   command_list = []
-  #   Connection.process( connection_handle.handle, command_list )
-  # end
+  def sscan( connection_handle, key, cursor, opts \\ [] )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key )
+       and is_binary( cursor ) do
+    opt_list = []
+    if :count in opts, do: opt_list = [ "COUNT", opts[:count] | opt_list ]
+    if :match in opts, do: opt_list = [ "MATCH", opts[:match] | opt_list ]
+
+    command_list = [ "SSCAN", cursor | opt_list ]
+    Connection.process( connection_handle.handle, command_list )
+  end
 
   def sunion( connection_handle, key_list )
       when is_record( connection_handle, ConnectionHandle )
@@ -1042,13 +1068,18 @@ defmodule RedisEx.Client do
     Connection.process( connection_handle.handle, command_list )
   end
 
-  #TODO: Implement this
-  # def zscan( connection_handle, key, cursor, opts \\ [] )
-  #     when is_record( connection_handle, ConnectionHandle )
-  #      and is_binary( key ) do
-  #   command_list = []
-  #   Connection.process( connection_handle.handle, command_list )
-  # end
+  def zscan( connection_handle, key, cursor, opts \\ [] )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key )
+       and is_binary( cursor ) do
+    opt_list = []
+    if :count in opts, do: opt_list = [ "COUNT", opts[:count] | opt_list ]
+    if :match in opts, do: opt_list = [ "MATCH", opts[:match] | opt_list ]
+
+    command_list = [ "ZSCAN", cursor | opt_list ]
+    Connection.process( connection_handle.handle, command_list )
+  end
+
 
   def zscore( connection_handle, key, member )
       when is_record( connection_handle, ConnectionHandle )
