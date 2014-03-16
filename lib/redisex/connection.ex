@@ -1,51 +1,214 @@
 defmodule RedisEx.Connection do
-  #TODO: unit test
-  #TODO: This should be an OTP server!
-  import RedisEx.Proto
+  use GenServer.Behaviour
+  alias RedisEx.RespReceiver
+  alias RedisEx.Proto
 
-  @moduledoc """
-  Handles the tcp connection to the redis server.
-  """
+  @handled_commands ~W[ DEL 
+                        DUMP 
+                        EXISTS
+                        EXPIRE
+                        EXPIREAT
+                        KEYS
+                        MIGRATE
+                        MOVE
+                        OBJECT
+                        PERSIST
+                        PEXPIRE
+                        PEXPIREAT
+                        PTTL
+                        RANDOMKEY
+                        RENAME
+                        RENAMENX
+                        RESTORE
+                        SCAN
+                        SORT
+                        TTL
+                        TYPE
+                        APPEND
+                        BITCOUNT
+                        BITOP
+                        BITPOS
+                        DECR
+                        DECRBY
+                        GET
+                        GETBIT
+                        GETRANGE
+                        GETSET
+                        INCR
+                        INCRBY
+                        INCRBYFLOAT
+                        MGET
+                        MSET
+                        MSETNX
+                        PSETEX
+                        SET
+                        SETBIT
+                        SETEX
+                        SETNX
+                        SETRANGE
+                        STRLEN
+                        HDEL
+                        HEXISTS
+                        HGET
+                        HGETALL
+                        HINCRBY
+                        HINCRBYFLOAT
+                        HKEYS
+                        HLEN
+                        HMGET
+                        HMSET
+                        HSCAN
+                        HSET
+                        HSETNX
+                        HVALS
+                        BLPOP
+                        BRPOP
+                        BRPOPLPUSH
+                        LINDEX
+                        LINSERT
+                        LLEN
+                        LPOP
+                        LPUSH
+                        LPUSHX
+                        LRANGE
+                        LREM
+                        LSET
+                        LTRIM
+                        RPOP
+                        RPOPLPUSH
+                        RPUSH
+                        RPUSHX
+                        SADD
+                        SCARD
+                        SDIFF
+                        SDIFFSTORE
+                        SINTER
+                        SINTERSTORE
+                        SISMEMBER
+                        SMEMBERS
+                        SMOVE
+                        SPOP
+                        SRANDMEMBER
+                        SREM
+                        SSCAN
+                        SUNION
+                        SUNIONSTORE
+                        ZADD
+                        ZCARD
+                        ZCOUNT
+                        ZINCRBY
+                        ZINTERSTORE
+                        ZRANGE
+                        ZRANGEBYSCORE
+                        ZRANGE
+                        ZREM
+                        ZREMRANGEBYRANK
+                        ZREMRANGEBYSCORE
+                        ZREVRANGE
+                        ZREVRANGEBYSCORE
+                        ZREVRANK
+                        ZSCAN
+                        ZSCORE
+                        ZUNIONSTORE
+                        DISCARD
+                        EXEC
+                        MULTI
+                        UNWATCH
+                        WATCH
+                        EVAL
+                        EVALSHA
+                        SCRIPT
+                        AUTH
+                        ECHO
+                        PING
+                        QUIT
+                        SELECT
+                        BGREWRITEAOF
+                        BGSAVE
+                        CLIENT
+                        CONFIG
+                        DBSIZE
+                        FLUSHALL
+                        FLUSHDB
+                        INFO
+                        LASTSAVE
+                        SAVE
+                        SHUTDOWN
+                        SLAVEOF
+                        SLOWLOG
+                        SYNC
+                        TIME
+                      ]
 
-  def connect( host, port ) when is_binary( host ) 
+  def init( [ hostname, port ] ) when is_binary( hostname ) 
+                                  and is_integer( port ) 
+                                  and port in ( 0..65535 ) do
+    socket = connect( hostname, port )
+    { :ok, [ socket: socket ] }
+  end
+
+  def handle_call( clist = [ "QUIT" | _ ], from, state ) do
+    socket = state[:socket]
+    send_command( socket, clist )
+    reply = RespReceiver.get_response( socket )
+    disconnect( socket )
+    { :stop, :disconnected, reply, [] }
+  end
+
+  def handle_call( clist = [ "SHUTDOWN" | _ ], from, state ) do
+    socket = state[:socket]
+    send_command( socket, clist )
+    reply = RespReceiver.get_response( socket )
+    disconnect( socket )
+    { :stop, :disconnected, reply, [] }
+  end
+
+  def handle_call( clist = [ command | _ ], from, state ) when command in @handled_commands do
+    socket = state[:socket]
+    send_command( socket, clist )
+    reply = RespReceiver.get_response( socket )
+    { :reply, reply, state }
+  end
+
+  def terminate( reason, state ) do
+    socket = state[:socket]
+    send_command( socket, [ "QUIT" ] )
+    disconnect( socket)
+    { :stop, :shutdown, [] }
+  end
+
+
+
+
+  defp connect( host, port ) when is_binary( host ) 
                              and is_integer( port ) do
     { :ok, host_list } = String.to_char_list( host )
     connect( host_list, port )
   end
 
-  def connect( host, port ) when is_list( host ) and 
+  defp connect( host, port ) when is_list( host ) and 
                                  is_integer( port ) do
     { :ok, socket } = :gen_tcp.connect( host, 
                                         port,
                                         [ :binary, 
                                           { :packet, :line },
+                                          { :nodelay, true },
+                                          { :keepalive, true },
                                           { :packet_size, 10_000_000 },
                                           { :active, false } ] )
     socket
   end
 
-  def disconnect( sock ) do
+  defp disconnect( sock ) do
     :ok = :gen_tcp.close( sock )
   end
 
-  def send_command( socket, command_list ) when is_list( command_list ) do
-    send_data( socket, to_proto( command_list ) )
+  defp send_command( socket, command_list ) when is_list( command_list ) do
+    send_data( socket, Proto.to_proto( command_list ) )
   end
 
   defp send_data( socket, data ) do
     :ok = :gen_tcp.send( socket, data )
   end
-
-  def get_response( socket ) do
-    { :ok, data } = receive_data( socket )
-    from_proto( data )
-  end
-
-  defp receive_data( socket ) do
-    #TODO: line protocol; move *<n> handling here
-    #TODO: Timeout handling
-    :gen_tcp.recv( socket, 0, 30000 )
-  end
-
 
 end
