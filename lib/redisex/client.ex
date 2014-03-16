@@ -1013,112 +1013,166 @@ defmodule RedisEx.Client do
 
 
   # Server
-  def bgrewriteaof( _client ) do
-    command_list = []
+  def bgrewriteaof( connection_handle )
+      when is_record( connection_handle, ConnectionHandle ) do
+    command_list = [ "BGREWRITEAOF" ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def bgsave( _client ) do
-    command_list = []
+
+  def bgsave( connection_handle )
+      when is_record( connection_handle, ConnectionHandle ) do
+    command_list = [ "BGSAVE" ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def client_getname( _client ) do
-    command_list = []
+
+  def client_getname( connection_handle )
+      when is_record( connection_handle, ConnectionHandle ) do
+    command_list = [ "CLIENT GETNAME" ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def client_kill( _client, _ip, _port ) do
-    command_list = []
+
+  def client_kill( connection_handle, ip, port )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( ip )
+       and is_binary( port ) do
+    command_list = [ "CLIENT KILL", "#{ip}:#{port}" ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def client_list( _client ) do
-    command_list = []
+
+  def client_list( connection_handle )
+      when is_record( connection_handle, ConnectionHandle ) do
+    command_list = [ "CLIENT LIST" ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def client_pause( _client, _timeout ) do
-    command_list = []
+
+  def client_pause( connection_handle, timeout )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_integer( timeout )
+       and timeout >= 0 do
+    command_list = [ "CLIENT PAUSE", timeout ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def client_setname( _client, _connection_name ) do
-    command_list = []
+
+  def client_setname( connection_handle, name )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( name ) do
+    command_list = [ "CLIENT SETNAME", name ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def config( _client, :get, _parameter ) do
-    command_list = []
+
+  def config_get( connection_handle, parameter )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( parameter ) do
+    command_list = [ "CONFIG GET", parameter ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def config( _client, :resetstat ) do
-    command_list = []
+
+  def config_resetstat( connection_handle )
+      when is_record( connection_handle, ConnectionHandle ) do
+    command_list = [ "CONFIG RESETSTAT" ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def config( _client, :rewrite ) do
-    command_list = []
+
+  def config_rewrite( connection_handle )
+      when is_record( connection_handle, ConnectionHandle ) do
+    command_list = [ "CONFIG REWRITE" ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def config( _client, :set, _parameter, _value ) do
-    command_list = []
+
+  def config_set( connection_handle, parameter, value )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( parameter )
+       and ( is_binary( value ) or is_integer( value ) ) do
+    command_list = [ "CONFIG SET", parameter, value ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def dbsize( _client ) do
-    command_list = []
+
+  def dbsize( connection_handle )
+      when is_record( connection_handle, ConnectionHandle ) do
+    command_list = [ "DBSIZE" ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def flushall( _client ) do
-    command_list = []
+
+  def flushall( connection_handle )
+      when is_record( connection_handle, ConnectionHandle ) do
+    command_list = [ "FLUSHALL" ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def flushdb( _client ) do
-    command_list = []
+
+  def flushdb( connection_handle )
+      when is_record( connection_handle, ConnectionHandle ) do
+    command_list = [ "FLUSHDB" ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def info( _client, section \\ :default ) when section in [ :server, :clients, :memory, :persistence, :stats, :replication, :cpu, :commandstats, :cluster, :keyspace, :all, :default ] do
-    command_list = []
+
+  def info( connection_handle, section \\ :default )
+      when is_record( connection_handle, ConnectionHandle )
+       and section in [ :server, :clients, :memory, :persistence, :stats, :replication, :cpu, :commandstats, :cluster, :keyspace, :all, :default ] do
+    command_list = [ "INFO", section ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def lastsave( _client ) do
-    command_list = []
+
+  def lastsave( connection_handle )
+      when is_record( connection_handle, ConnectionHandle ) do
+    command_list = [ "LASTSAVE" ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def save( _client ) do
-    command_list = []
+
+  def save( connection_handle )
+      when is_record( connection_handle, ConnectionHandle ) do
+    command_list = [ "SAVE" ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def shutdown( _client ) do
-    command_list = []
+
+  def shutdown( connection_handle )
+      when is_record( connection_handle, ConnectionHandle ) do
+    command_list = [ "SHUTDOWN" ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def shutdown( _client, :save ) do
-    command_list = []
+
+  def shutdown( connection_handle, :save )
+      when is_record( connection_handle, ConnectionHandle ) do
+    command_list = [ "SHUTDOWN SAVE" ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def shutdown( _client, :nosave ) do
-    command_list = []
+
+  def shutdown( connection_handle, :nosave )
+      when is_record( connection_handle, ConnectionHandle ) do
+    command_list = [ "SHUTDOWN NOSAVE" ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def slaveof( _client, _host, _port ) do
-    command_list = []
+
+  def slaveof( connection_handle, host, port )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( host )
+       and is_binary( port ) do
+    command_list = [ "SLAVEOF", host, port ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def slaveof( _client, :noone ) do
-    command_list = []
+
+  def slaveof( connection_handle, :noone )
+      when is_record( connection_handle, ConnectionHandle ) do
+    command_list = [ "SLAVEOF", "NO", "ONE" ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def slowlog( _client, :get ) do
-    command_list = []
+
+  def slowlog( connection_handle, subcommand, arguments \\ [] )
+      when is_record( connection_handle, ConnectionHandle )
+       and subcommand in [ :get, :len, :reset ] 
+       and is_list( arguments ) do
+    command_list = [ "SLOWLOG", atom_to_binary( subcommand ) | arguments ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def slowlog( _client, :len ) do
-    command_list = []
+
+  def sync( connection_handle )
+      when is_record( connection_handle, ConnectionHandle ) do
+    command_list = [ "SYNC" ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def slowlog( _client, :reset ) do
-    command_list = []
-    Connection.process( connection_handle.handle, command_list )
-  end
-  def sync( _client ) do
-    command_list = []
-    Connection.process( connection_handle.handle, command_list )
-  end
-  def time( _client ) do
-    command_list = []
+
+  def time( connection_handle )
+      when is_record( connection_handle, ConnectionHandle ) do
+    command_list = [ "TIME" ]
     Connection.process( connection_handle.handle, command_list )
   end
 end
