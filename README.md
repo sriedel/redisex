@@ -2,7 +2,9 @@
 
 A simple Redis connector for Elixir
 
-currently only the SET and GET commands are implemented
+Most commands have been implemented, except for Pub/Sub, MONITOR, DEBUG, and
+the SCAN commands. Commands with options may not have their options
+implemented yet.
 
 ## Usage
 ```
