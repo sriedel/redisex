@@ -139,7 +139,13 @@ defmodule RedisEx.Connection do
                         SYNC
                         TIME
                       ]
-  
+ 
+
+  def process( server_pid, command_list ) when is_pid( server_pid ) 
+                                           and is_list( command_list ) do
+    :gen_server.call( server_pid, command_list )
+  end
+
   def start_link( args, opts \\ [] ) do
     :gen_server.start_link( __MODULE__, args, opts )
   end
