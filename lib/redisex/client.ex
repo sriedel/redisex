@@ -866,13 +866,11 @@ defmodule RedisEx.Client do
     Connection.process( connection_handle.handle, command_list )
   end
 
-  #TODO: implement open intervals
-  #TODO: implement infinity
-  def zcount( connection_handle, key, min, max )
+  def zcount( connection_handle, key, min, max ) 
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) 
-       and is_number( min ) 
-       and is_number( max ) do
+       and is_binary( min ) 
+       and is_binary( max ) do
     command_list = [ "ZCOUNT", key, min, max ]
     Connection.process( connection_handle.handle, command_list )
   end
@@ -880,43 +878,76 @@ defmodule RedisEx.Client do
   def zincrby( connection_handle, key, increment, member )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) 
-       and is_number( increment )
+       and is_binary( increment )
        and is_binary( member ) do
     command_list = [ "ZINCRBY", key, increment, member ]
     Connection.process( connection_handle.handle, command_list )
   end
 
-  #TODO: Implement weights
-  #TODO: Implement aggregates
   def zinterstore( connection_handle, destination, key_list, opts \\ [] )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( destination ) 
        and is_list( key_list )
        and length( key_list ) > 0 do
+
+    opt_list = []
+    if :aggregate in opts and opts[:aggregate] in [ :sum, :min, :max ] do
+      opt_list = [ "AGGREGATE", opts[:aggregate] | opt_list ]
+    end
+    if :weights in opts do
+      weight_list = [ "WEIGHTS" | opts[:weights] ]
+      opt_list = :lists.append( weight_list, opt_list )
+    end
+
     command_list = [ "ZINTERSTORE", destination, length(key_list) | key_list ]
+    command_list = :lists.append( command_list, opt_list )
     Connection.process( connection_handle.handle, command_list )
   end
 
-  #TODO: Implement WITHSCORES
   def zrange( connection_handle, key, range_start, range_end, opts \\ [] )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) 
        and is_integer( range_start ) 
        and is_integer( range_end ) do
-    command_list = [ "ZRANGE", key, range_start, range_end ]
+
+    opt_list = []
+    if :withscores in opts do
+      opt_list = [ "WITHSCORES" | opt_list ]
+    end
+    command_list = [ "ZRANGE", key, range_start, range_end | opt_list ]
     Connection.process( connection_handle.handle, command_list )
   end
 
-  #TODO: Implement WITHSCORES
-  #TODO: Implement LIMIT
+  def zrangebyscore( connection_handle, key, min, max, opts )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) 
+       and is_binary( min )
+       and is_binary( max ) do
+
+    opt_list = []
+    if :limit in opts do
+      [ offset, count ] = opts[:limit]
+      opt_list = [ "LIMIT", offset, count | opt_list ]
+    end
+
+    if :withscore in opts do
+      opt_list = [ "WITHSCORE" | opt_list ]
+    end
+
+    command_list = [ "ZRANGEBYSCORE", key, min, max | opt_list ]
+    Connection.process( connection_handle.handle, command_list )
+  end
+
   def zrangebyscore( connection_handle, key, min, max, opts \\ [] )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) 
        and is_number( min )
        and is_number( max ) do
-    command_list = [ "ZRANGEBYSCORE", key, min, max ]
-    Connection.process( connection_handle.handle, command_list )
+    bin_min = number_to_binary( min )
+    bin_max = number_to_binary( max )
+    zrangebyscore( connection_handle, key, bin_min, bin_max, opts )
   end
+
 
   def zrank( connection_handle, key, member )
       when is_record( connection_handle, ConnectionHandle )
@@ -943,36 +974,64 @@ defmodule RedisEx.Client do
     Connection.process( connection_handle.handle, command_list )
   end
 
-  #TODO: Implement open intervals
-  #TODO: Implement infinity
+  def zremrangebyscore( connection_handle, key, min, max )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key )
+       and is_binary( min ) 
+       and is_binary( max ) do
+    command_list = [ "ZREMRANGEBYSCORE", key, min, max ]
+    Connection.process( connection_handle.handle, command_list )
+  end
+
   def zremrangebyscore( connection_handle, key, min, max )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key )
        and is_number( min ) 
        and is_number( max ) do
-    command_list = [ "ZREMRANGEBYSCORE", key, min, max ]
-    Connection.process( connection_handle.handle, command_list )
+    zremrangebyscore( connection_handle, key, number_to_binary( min ), number_to_binary( max ) )
   end
 
-  #TODO: Implement WITHSCORES
   def zrevrange( connection_handle, key, range_start, range_end, opts \\ [] )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) 
        and is_integer( range_start )
        and is_integer( range_end ) do
-    command_list = [ "ZREVRANGE", key, range_start, range_end ]
+
+    opt_list = []
+    if :withscores in opts do
+      opt_list = [ "WITHSCORES" | opt_list ] 
+    end
+
+    command_list = [ "ZREVRANGE", key, range_start, range_end | opt_list ]
     Connection.process( connection_handle.handle, command_list )
   end
 
-  #TODO: Implement WITHSCORES
-  # TODO: Implement LIMIT
+  def zrevrangebyscore( connection_handle, key, max, min, opts ) 
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) 
+       and is_binary( min )
+       and is_binary( max ) do
+
+    opt_list = []
+    if :limit in opts do
+      [ offset, count ] = opts[:limit]
+      opt_list = [ "LIMIT", offset, count | opt_list ]
+    end
+
+    if :withscore in opts do
+      opt_list = [ "WITHSCORE" | opt_list ]
+    end
+
+    command_list = [ "ZREVRANGEBYSCORE", key, max, min | opt_list ]
+    Connection.process( connection_handle.handle, command_list )
+  end
+
   def zrevrangebyscore( connection_handle, key, max, min, opts \\ [] )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) 
        and is_number( min )
        and is_number( max ) do
-    command_list = [ "ZREVRANGEBYSCORE", key, max, min ]
-    Connection.process( connection_handle.handle, command_list )
+    zrevrangebyscore( connection_handle, key, number_to_binary( min ), number_to_binary( max ), opts )
   end
 
   def zrevrank( connection_handle, key, member )
@@ -999,14 +1058,23 @@ defmodule RedisEx.Client do
     Connection.process( connection_handle.handle, command_list )
   end
 
-  #TODO: Implement WEIGHTS
-  #TODO: Implement AGGREGATE
   def zunionstore( connection_handle, destination, key_list, opts \\ [] )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( destination ) 
        and is_list( key_list )
        and length( key_list ) > 0 do
+
+    opt_list = []
+    if :aggregate in opts and opts[:aggregate] in [ :sum, :min, :max ] do
+      opt_list = [ "AGGREGATE", opts[:aggregate] | opt_list ]
+    end
+    if :weights in opts do
+      weight_list = [ "WEIGHTS" | opts[:weights] ]
+      opt_list = :lists.append( weight_list, opt_list )
+    end
+
     command_list = [ "ZUNIONSTORE", destination, length( key_list ) | key_list ]
+    command_list = :lists.append( command_list, opt_list )
     Connection.process( connection_handle.handle, command_list )
   end
 
@@ -1341,4 +1409,7 @@ defmodule RedisEx.Client do
     command_list = [ "TIME" ]
     Connection.process( connection_handle.handle, command_list )
   end
+
+  defp number_to_binary( number ) when is_integer( number ), do: integer_to_binary( number )
+  defp number_to_binary( number ) when is_float( number ), do: float_to_binary( number )
 end
