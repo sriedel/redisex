@@ -147,30 +147,30 @@ defmodule RedisEx.Connection do
     { :ok, [ socket: socket ] }
   end
 
-  def handle_call( clist = [ "QUIT" | _ ], from, state ) do
+  def handle_call( clist = [ "QUIT" | _ ], _from, state ) do
     socket = state[:socket]
     send_command( socket, clist )
     reply = RespReceiver.get_response( socket )
     disconnect( socket )
-    { :stop, :disconnected, reply, [] }
+    { :stop, :normal, reply, [] }
   end
 
-  def handle_call( clist = [ "SHUTDOWN" | _ ], from, state ) do
+  def handle_call( clist = [ "SHUTDOWN" | _ ], _from, state ) do
     socket = state[:socket]
     send_command( socket, clist )
     reply = RespReceiver.get_response( socket )
     disconnect( socket )
-    { :stop, :disconnected, reply, [] }
+    { :stop, :normal, reply, [] }
   end
 
-  def handle_call( clist = [ command | _ ], from, state ) when command in @handled_commands do
+  def handle_call( clist = [ command | _ ], _from, state ) when command in @handled_commands do
     socket = state[:socket]
     send_command( socket, clist )
     reply = RespReceiver.get_response( socket )
     { :reply, reply, state }
   end
 
-  def terminate( reason, state ) do
+  def terminate( _reason, state ) do
     case state[:socket] do
       nil    -> true
       socket -> send_command( socket, [ "QUIT" ] )

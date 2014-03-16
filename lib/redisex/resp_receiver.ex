@@ -24,8 +24,8 @@ defmodule RedisEx.RespReceiver do
   end
 
   # Bulk strings
-  defp decode( socket, <<"$-1\r\n">> ), do: nil
-  defp decode( socket, <<"$0\r\n\r\n">> ), do: ""
+  defp decode( _socket, <<"$-1\r\n">> ), do: nil
+  defp decode( _socket, <<"$0\r\n\r\n">> ), do: ""
   defp decode( socket, <<?$, remainder::binary>> ) do
     payload_bytes = remove_crlf( remainder ) |> binary_to_integer
 
