@@ -2,7 +2,7 @@ defmodule RedisEx.Client do
   #TODO: Unit test
   alias RedisEx.Connection
 
-  defrecord Client, socket: nil
+  defrecord ConnectionHandle, handle: nil
 
   def connect( hostname, port ) when is_binary( hostname )
                                  and is_binary( port ) do
@@ -11,7 +11,7 @@ defmodule RedisEx.Client do
 
   def connect( hostname, port ) when is_binary( hostname )
                                  and is_integer( port ) do
-    Client.new( socket: Connection.connect( hostname, port ) )
+    ConnectionHandle.new( handle: Connection.start_link( [ hostname, port ] ) )
   end
 
   def disconnect( client ) do
