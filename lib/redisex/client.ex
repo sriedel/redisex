@@ -74,8 +74,6 @@ defmodule RedisEx.Client do
     Connection.process( connection_handle.handle, command_list )
   end
 
-  #TODO: Implement COPY
-  #TODO: Implement REPLACE
   def migrate( connection_handle, host, port, key, db, timeout, opts \\ [] )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( host )
@@ -85,7 +83,16 @@ defmodule RedisEx.Client do
        and db >= 0
        and is_integer( timeout )
        and timeout >= 0 do
-    command_list = [ "MIGRATE", host, port, key, db, timeout ]
+
+    opt_list = []
+    if :replace in opts do
+      opt_list = [ "REPLACE" | opt_list ]
+    end
+    if :copy in opts do
+      opt_list = [ "COPY" | opt_list ]
+    end
+
+    command_list = [ "MIGRATE", host, port, key, db, timeout | opt_list ]
     Connection.process( connection_handle.handle, command_list )
   end
 
