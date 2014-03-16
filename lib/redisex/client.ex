@@ -928,56 +928,89 @@ defmodule RedisEx.Client do
   # end
 
   # Scripting
-  def eval( _client, _script, _key_list, _arg_list ) do
-    command_list = []
+  def eval( connection_handle, script, key_list, arg_list )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( script )
+       and is_list( key_list ) 
+       and is_list( arg_list ) do
+    key_arg_list = :lists.append( key_list, arg_list )
+    command_list = [ "EVAL", script, length( key_list ) | key_arg_list ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def evalsha( _client, _sha_digest, _numkeys, _key_list, _arg_list ) do
-    command_list = []
+
+  def evalsha( connection_handle, sha_digest, key_list, arg_list )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( sha_digest ) 
+       and is_list( key_list )
+       and is_list( arg_list ) do
+    key_arg_list = :lists.append( key_list, arg_list )
+    command_list = [ "EVALSHA", sha_digest, length( key_list ) | key_arg_list ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def script_exists( _client, _script ) do
-    command_list = []
+
+  def script_exists( connection_handle, script_list )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_list( script_list )
+       and length( script_list ) > 0 do
+    command_list = [ "SCRIPT EXISTS" | script_list ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def script_exists( _client, _script_list ) do
-    command_list = []
+
+  def script_flush( connection_handle )
+      when is_record( connection_handle, ConnectionHandle ) do
+    command_list = [ "SCRIPT FLUSH" ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def script_flush( _client ) do
-    command_list = []
+
+  def script_kill( connection_handle )
+      when is_record( connection_handle, ConnectionHandle ) do
+    command_list = [ "SCRIPT KILL" ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def script_kill( _client ) do
-    command_list = []
+
+  def script_load( connection_handle, script )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( script ) do
+    command_list = [ "SCRIPT LOAD", script ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def script_load( _client, _script ) do
-    command_list = []
-    Connection.process( connection_handle.handle, command_list )
-  end
+
   
   # Connection
-  def auth( _client, _password ) do
-    command_list = []
+  def auth( connection_handle, password )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( password ) do
+    command_list = [ "AUTH", password ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def echo( _client, _message ) do
-    command_list = []
+
+  def echo( connection_handle, message )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( message ) do
+    command_list = [ "ECHO", message ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def ping( _client ) do
-    command_list = []
+
+  def ping( connection_handle )
+      when is_record( connection_handle, ConnectionHandle ) do
+    command_list = [ "PING" ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def quit( _client ) do
-    command_list = []
+
+  def quit( connection_handle )
+      when is_record( connection_handle, ConnectionHandle ) do
+    command_list = [ "QUIT" ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def select( _client, _index ) do
-    command_list = []
+
+  def select( connection_handle, index )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_integer( index )
+       and index >= 0 do
+    command_list = [ "SELECT", index ]
     Connection.process( connection_handle.handle, command_list )
   end
+
 
   # Server
   def bgrewriteaof( _client ) do
