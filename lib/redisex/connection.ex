@@ -171,14 +171,14 @@ defmodule RedisEx.Connection do
   end
 
   def terminate( reason, state ) do
-    socket = state[:socket]
-    send_command( socket, [ "QUIT" ] )
-    disconnect( socket)
+    case state[:socket] do
+      nil    -> true
+      socket -> send_command( socket, [ "QUIT" ] )
+                disconnect( socket)
+    end
+
     { :stop, :shutdown, [] }
   end
-
-
-
 
   defp connect( host, port ) when is_binary( host ) 
                              and is_integer( port ) do
