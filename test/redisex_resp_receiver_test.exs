@@ -66,6 +66,7 @@ defmodule RedisExRespReceiverTest do
     decode_test( "*5\r\n:1\r\n:2\r\n:3\r\n:4\r\n$6\r\nfoobar\r\n", 
                  [ 1,2,3,4,"foobar" ] )
     decode_test( "*2\r\n*3\r\n:1\r\n:2\r\n:3\r\n*2\r\n+Foo\r\n-Bar\r\n",
-                 [ [ 1, 2, 3 ], [ "Foo", { :redis_error, "Bar" } ] ] )
+                 [ [ 1, 2, 3 ], 
+                   [ "Foo", { :redis_error, "Bar" } ] ] )
   end
 end
