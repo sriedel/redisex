@@ -402,94 +402,153 @@ defmodule RedisEx.Client do
 
 
   # List commands
-  def blpop( _client, _key, _timeout ) do
-    command_list = []
+  def blpop( connection_handle, key_list, seconds )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_list( key_list ) 
+       and length( key_list ) > 0
+       and is_integer( seconds )
+       and seconds >= 0 do
+    command_list = [ "BLPOP" | key_list ] ++ [ seconds ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def blpop( _client, _key_list, _timeout ) do
-    command_list = []
+
+  def brpop( connection_handle, key_list, seconds )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_list( key_list )
+       and length( key_list ) > 0
+       and is_integer( seconds )
+       and seconds >= 0 do
+    command_list = [ "BRPOP" | key_list ] ++ [ seconds ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def brpop( _client, _key, _timeout ) do
-    command_list = []
+
+  def brpoplpush( connection_handle, source, destination, seconds )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( source )
+       and is_binary( destination )
+       and is_integer( seconds )
+       and seconds >= 0 do
+    command_list = [ "BRPOPLPUSH", source, destination, seconds ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def brpop( _client, _key_list, _timeout ) do
-    command_list = []
+
+  def lindex( connection_handle, key, index )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) 
+       and is_integer( index ) do
+    command_list = [ "LINDEX", key, index ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def brpoplpush( _client, _source, _destination, _timeout ) do
-    command_list = []
+
+  def linsert( connection_handle, key, where, pivot, value )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) 
+       and where in [ :before, :after ]
+       and is_binary( pivot )
+       and is_binary( value ) do
+    command_list = [ "LINSERT", key, atom_to_binary( where ), pivot, value ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def lindex( _client, _key, _index ) do
-    command_list = []
+
+  def llen( connection_handle, key )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) do
+    command_list = [ "LLEN", key ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def linsert( _client, _key, :before, _pivot, _value ) do
-    command_list = []
+
+  def lpop( connection_handle, key )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) do
+    command_list = [ "LPOP", key ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def linsert( _client, _key, :after, _pivot, _value ) do
-    command_list = []
+
+  def lpush( connection_handle, key, value_list )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) 
+       and is_list( value_list )
+       and length( value_list ) > 0 do
+    command_list = [ "LPUSH", key | value_list ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def llen( _client, _key ) do
-    command_list = []
+
+  def lpushx( connection_handle, key, value )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) 
+       and is_binary( value ) do
+    command_list = [ "LPUSHX", key, value ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def lpop( _client, _key ) do
-    command_list = []
+
+  def lrange( connection_handle, key, range_start, range_end )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key )
+       and is_integer( range_start )
+       and is_integer( range_end ) do
+    command_list = [ "LRANGE", key, range_start, range_end ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def lpush( _client, _key, _value ) do
-    command_list = []
+
+  def lrem( connection_handle, key, count, value )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) 
+       and is_integer( count ) 
+       and is_binary( value ) do
+    command_list = [ "LREM", key, count, value ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def lpush( _client, _key, _value_list ) do
-    command_list = []
+
+  def lset( connection_handle, key, index, value )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) 
+       and is_integer( index )
+       and is_binary( value ) do
+    command_list = [ "LSET", key, index, value ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def lpushx( _client, _key, _value ) do
-    command_list = []
+
+  def ltrim( connection_handle, key, range_start, range_end )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) 
+       and is_integer( range_start )
+       and is_integer( range_end ) do
+    command_list = [ "LTRIM", key, range_start, range_end ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def lrange( _client, _key, _start, _stop ) do
-    command_list = []
+
+  def rpop( connection_handle, key )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) do
+    command_list = [ "RPOP", key ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def lrem( _client, _key, _count, _value ) do
-    command_list = []
+
+  def rpoplpush( connection_handle, source, destination )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( source )
+       and is_binary( destination ) do
+    command_list = [ "RPOPLPUSH", source, destination ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def lset( _client, _key, _index, _value ) do
-    command_list = []
+
+  def rpush( connection_handle, key, value_list )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key )
+       and is_list( value_list )
+       and length( value_list ) > 0 do
+    command_list = [ "RPUSH", key | value_list ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def ltrim( _client, _key, _start, _stop ) do
-    command_list = []
+
+  def rpushx( connection_handle, key, value )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) 
+       and is_binary( value ) do
+    command_list = [ "RPUSHX", key, value ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def rpop( _client, _key ) do
-    command_list = []
-    Connection.process( connection_handle.handle, command_list )
-  end
-  def rpoplpush( _client, _source, _destination ) do
-    command_list = []
-    Connection.process( connection_handle.handle, command_list )
-  end
-  def rpush( _client, _key, _value ) do
-    command_list = []
-    Connection.process( connection_handle.handle, command_list )
-  end
-  def rpush( _client, _key, _value_list ) do
-    command_list = []
-    Connection.process( connection_handle.handle, command_list )
-  end
-  def rpushx( _client, _key, _value ) do
-    command_list = []
-    Connection.process( connection_handle.handle, command_list )
-  end
+
 
   # Set commands
   def sadd( _client, _key, _member ) do
