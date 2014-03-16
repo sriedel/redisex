@@ -3,8 +3,7 @@
 A simple Redis connector for Elixir
 
 Most commands have been implemented, except for Pub/Sub, MONITOR, DEBUG, and
-the SCAN commands. Commands with options may not have their options
-implemented yet.
+the Transaction commands.
 
 ## Usage
 ```
@@ -20,4 +19,4 @@ iex(3)>   RedisEx.Client.get( client, "foo" )
 - unit test client 
 - Implement ALL the commands!
 - Add an OTP Server for pub/sub operations
-- add a connection pool
+- Add an OTP Server for monitor 
