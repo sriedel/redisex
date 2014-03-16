@@ -551,232 +551,381 @@ defmodule RedisEx.Client do
 
 
   # Set commands
-  def sadd( _client, _key, _member ) do
-    command_list = []
+  def sadd( connection_handle, key, member_list )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) 
+       and is_list( member_list )
+       and length( member_list ) > 0 do
+    command_list = [ "SADD", key | member_list ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def scard( _client, _key ) do
-    command_list = []
+
+  def scard( connection_handle, key )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) do
+    command_list = [ "SCARD", key ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def sdiff( _client, _key_list ) do
-    command_list = []
+
+  def sdiff( connection_handle, key_list )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_list( key_list ) 
+       and length( key_list ) > 0 do
+    command_list = [ "SDIFF" | key_list ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def sdiffstore( _client, _destination, _key_list ) do
-    command_list = []
+
+  def sdiffstore( connection_handle, destination, key_list )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( destination )
+       and is_list( key_list ) 
+       and length( key_list ) > 0 do
+    command_list = [ "SDIFFSTORE", destination | key_list ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def sinter( _client, _key_list ) do
-    command_list = []
+
+  def sinter( connection_handle, key_list )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_list( key_list ) 
+       and length( key_list ) > 0 do
+    command_list = [ "SINTER" | key_list ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def sinterstore( _client, _destination, _key_list ) do
-    command_list = []
+
+  def sinterstore( connection_handle, destination, key_list )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( destination )
+       and is_list( key_list ) 
+       and length( key_list ) > 0 do
+    command_list = [ "SINTERSTORE", destination | key_list ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def sis_member( _client, _key, _member ) do
-    command_list = []
+
+  def sismember( connection_handle, key, member )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) 
+       and is_binary( member ) do
+    command_list = [ "SISMEMBER", key, member ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def s_members( _client, _key ) do
-    command_list = []
+
+  def smembers( connection_handle, key )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) do
+    command_list = [ "SMEMBERS", key ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def smove( _client, _source_key, _destinationkey, _member ) do
-    command_list = []
+
+  def smove( connection_handle, source_key, destination_key, member )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( source_key ) 
+       and is_binary( destination_key ) 
+       and is_binary( member ) do
+    command_list = [ "SMOVE", source_key, destination_key, member ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def spop( _client, _key ) do
-    command_list = []
+
+  def spop( connection_handle, key )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) do
+    command_list = [ "SPOP", key ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def srand_member( _client, _key ) do
-    command_list = []
+
+  def srandmember( connection_handle, key )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) do
+    command_list = [ "SRANDMEMBER", key ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def srand_member( _client, _key, _count ) do
-    command_list = []
+
+  def srandmember( connection_handle, key, count )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) 
+       and is_integer( count ) do
+    command_list = [ "SRANDMEMBER", key, count ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def srem( _client, _key, _member ) do
-    command_list = []
+
+  def srem( connection_handle, key, member_list )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key )
+       and is_list( member_list ) 
+       and length( member_list ) > 0 do
+    command_list = [ "SREM", key | member_list ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def srem( _client, _key, _member_list ) do
-    command_list = []
+
+  #TODO: Implement this
+  # def sscan( connection_handle, key, cursor, opts \\ [] )
+  #     when is_record( connection_handle, ConnectionHandle )
+  #      and is_binary( key ) do
+  #   command_list = []
+  #   Connection.process( connection_handle.handle, command_list )
+  # end
+
+  def sunion( connection_handle, key_list )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_list( key_list ) 
+       and length( key_list ) > 0 do
+    command_list = [ "SUNION" | key_list ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def sscan( _client, _key, _cursor, _opts \\ [] ) do
-    command_list = []
+
+  def sunionstore( connection_handle, destination_key, key_list )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( destination_key ) 
+       and is_list( key_list ) 
+       and length( key_list ) > 0 do
+    command_list = [ "SUNIONSTORE", destination_key | key_list ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def sunion( _client, _key_list ) do
-    command_list = []
-    Connection.process( connection_handle.handle, command_list )
-  end
-  def sunionstore( _client, _destination, _key_list ) do
-    command_list = []
-    Connection.process( connection_handle.handle, command_list )
-  end
+
 
   # Sorted Set commands
-  def zadd( _client, _key, _score, _member ) do
-    command_list = []
+  def zadd( connection_handle, key, score_member_list )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key )
+       and is_list( score_member_list )
+       and length( score_member_list ) > 0
+       and rem( length( score_member_list ), 2 ) == 0 do
+    command_list = [ "ZADD", key | score_member_list ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def zadd( _client, _key, _score_member_list ) do
-    command_list = []
+
+  def zcard( connection_handle, key )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) do
+    command_list = [ "ZCARD", key ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def zcard( _client, _key ) do
-    command_list = []
+
+  #TODO: implement open intervals
+  #TODO: implement infinity
+  def zcount( connection_handle, key, min, max )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) 
+       and is_number( min ) 
+       and is_number( max ) do
+    command_list = [ "ZCOUNT", key, min, max ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def zcount( _client, _key, _min, _max ) do
-    command_list = []
+
+  def zincrby( connection_handle, key, increment, member )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) 
+       and is_number( increment )
+       and is_binary( member ) do
+    command_list = [ "ZINCRBY", key, increment, member ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def zincrby( _client, _key, _increment, _member ) do
-    command_list = []
+
+  #TODO: Implement weights
+  #TODO: Implement aggregates
+  def zinterstore( connection_handle, destination, key_list, opts \\ [] )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( destination ) 
+       and is_list( key_list )
+       and length( key_list ) > 0 do
+    command_list = [ "ZINTERSTORE", destination, length(key_list) | key_list ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def zinterstore( _client, _destination, _num_keys, _key_list, _opts \\ [] ) do
-    command_list = []
+
+  #TODO: Implement WITHSCORES
+  def zrange( connection_handle, key, range_start, range_end, opts \\ [] )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) 
+       and is_integer( range_start ) 
+       and is_integer( range_end ) do
+    command_list = [ "ZRANGE", key, range_start, range_end ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def zrange( _client, _key, _start, _stop, _opts \\ [] ) do
-    command_list = []
+
+  #TODO: Implement WITHSCORES
+  #TODO: Implement LIMIT
+  def zrangebyscore( connection_handle, key, min, max, opts \\ [] )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) 
+       and is_number( min )
+       and is_number( max ) do
+    command_list = [ "ZRANGEBYSCORE", key, min, max ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def zrangebyscore( _client, _key, _min, _max, _opts \\ [] ) do
-    command_list = []
+
+  def zrank( connection_handle, key, member )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) do
+    command_list = [ "ZRANGE", key, member ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def zrange( _client, _key, _member ) do
-    command_list = []
+
+  def zrem( connection_handle, key, member_list )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key )
+       and is_list( member_list ) 
+       and length( member_list ) > 0 do
+    command_list = [ "ZREM", key | member_list ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def zrem( _client, _key, _member ) do
-    command_list = []
+
+  def zremrangebyrank( connection_handle, key, range_start, range_end )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) 
+       and is_integer( range_start ) 
+       and is_integer( range_end ) do
+    command_list = [ "ZREMRANGEBYRANK", key, range_start, range_end ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def zrem( _client, _key, _member_list ) do
-    command_list = []
+
+  #TODO: Implement open intervals
+  #TODO: Implement infinity
+  def zremrangebyscore( connection_handle, key, min, max )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key )
+       and is_number( min ) 
+       and is_number( max ) do
+    command_list = [ "ZREMRANGEBYSCORE", key, min, max ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def zremrangebyrank( _client, _key, _start, _stop) do
-    command_list = []
+
+  #TODO: Implement WITHSCORES
+  def zrevrange( connection_handle, key, range_start, range_end, opts \\ [] )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) 
+       and is_integer( range_start )
+       and is_integer( range_end ) do
+    command_list = [ "ZREVRANGE", key, range_start, range_end ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def zremrangebyscore( _client, _key, _min, _max ) do
-    command_list = []
+
+  #TODO: Implement WITHSCORES
+  # TODO: Implement LIMIT
+  def zrevrangebyscore( connection_handle, key, max, min, opts \\ [] )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) 
+       and is_number( min )
+       and is_number( max ) do
+    command_list = [ "ZREVRANGEBYSCORE", key, max, min ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def zrevrange( _client, _key, _start, _stop, _opts \\ [] ) do
-    command_list = []
+
+  def zrevrank( connection_handle, key, member )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key )
+       and is_binary( member ) do
+    command_list = [ "ZREVRANK", key, member ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def zrevrangebyscore( _client, _key, _max, _min, _opts \\ [] ) do
-    command_list = []
+
+  #TODO: Implement this
+  # def zscan( connection_handle, key, cursor, opts \\ [] )
+  #     when is_record( connection_handle, ConnectionHandle )
+  #      and is_binary( key ) do
+  #   command_list = []
+  #   Connection.process( connection_handle.handle, command_list )
+  # end
+
+  def zscore( connection_handle, key, member )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key )
+       and is_binary( member ) do
+    command_list = [ "ZSCORE", key, member ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def zrevrank( _client, _key, _member ) do
-    command_list = []
+
+  #TODO: Implement WEIGHTS
+  #TODO: Implement AGGREGATE
+  def zunionstore( connection_handle, destination, key_list, opts \\ [] )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( destination ) 
+       and is_list( key_list )
+       and length( key_list ) > 0 do
+    command_list = [ "ZUNIONSTORE", destination, length( key_list ) | key_list ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def zscan( _client, _key, _cursor, _opts \\ [] ) do
-    command_list = []
-    Connection.process( connection_handle.handle, command_list )
-  end
-  def zscore( _client, _key, _member ) do
-    command_list = []
-    Connection.process( connection_handle.handle, command_list )
-  end
-  def zunionstore( _client, _destination, _numkeys, _key_list, _opts \\ [] ) do
-    command_list = []
-    Connection.process( connection_handle.handle, command_list )
-  end
+
 
   # Pub/Sub commands
-  def psubscribe( _client, _pattern ) do
-    command_list = []
-    Connection.process( connection_handle.handle, command_list )
-  end
-  def psubscribe( _client, _pattern_list ) do
-    command_list = []
-    Connection.process( connection_handle.handle, command_list )
-  end
-  def pubsub( _client, :channels ) do
-    command_list = []
-    Connection.process( connection_handle.handle, command_list )
-  end
-  def pubsub( _client, :channels, _pattern ) do
-    command_list = []
-    Connection.process( connection_handle.handle, command_list )
-  end
-  def pubsub( _client, :numsub, channel ) when is_binary( channel ) do
-    command_list = []
-    Connection.process( connection_handle.handle, command_list )
-  end
-  def pubsub( _client, :numsub, channel_list ) when is_list( channel_list ) do
-    command_list = []
-    Connection.process( connection_handle.handle, command_list )
-  end
-  def pubsub( _client, :numpat ) do
-    command_list = []
-    Connection.process( connection_handle.handle, command_list )
-  end
-  def punsubscribe( _client, _pattern ) do
-    command_list = []
-    Connection.process( connection_handle.handle, command_list )
-  end
-  def punsubscribe( _client, _pattern_list ) do
-    command_list = []
-    Connection.process( connection_handle.handle, command_list )
-  end
-  def subscribe( _client, _channel ) do
-    command_list = []
-    Connection.process( connection_handle.handle, command_list )
-  end
-  def subscribe( _client, _channel_list ) do
-    command_list = []
-    Connection.process( connection_handle.handle, command_list )
-  end
-  def unsubscribe( _client, _channel ) do
-    command_list = []
-    Connection.process( connection_handle.handle, command_list )
-  end
-  def unsubscribe( _client, _channel_list ) do
-    command_list = []
-    Connection.process( connection_handle.handle, command_list )
-  end
+  #TODO: Implement these
+  # def psubscribe( _client, _pattern ) do
+  #   command_list = []
+  #   Connection.process( connection_handle.handle, command_list )
+  # end
+  # def psubscribe( _client, _pattern_list ) do
+  #   command_list = []
+  #   Connection.process( connection_handle.handle, command_list )
+  # end
+  # def pubsub( _client, :channels ) do
+  #   command_list = []
+  #   Connection.process( connection_handle.handle, command_list )
+  # end
+  # def pubsub( _client, :channels, _pattern ) do
+  #   command_list = []
+  #   Connection.process( connection_handle.handle, command_list )
+  # end
+  # def pubsub( _client, :numsub, channel ) when is_binary( channel ) do
+  #   command_list = []
+  #   Connection.process( connection_handle.handle, command_list )
+  # end
+  # def pubsub( _client, :numsub, channel_list ) when is_list( channel_list ) do
+  #   command_list = []
+  #   Connection.process( connection_handle.handle, command_list )
+  # end
+  # def pubsub( _client, :numpat ) do
+  #   command_list = []
+  #   Connection.process( connection_handle.handle, command_list )
+  # end
+  # def punsubscribe( _client, _pattern ) do
+  #   command_list = []
+  #   Connection.process( connection_handle.handle, command_list )
+  # end
+  # def punsubscribe( _client, _pattern_list ) do
+  #   command_list = []
+  #   Connection.process( connection_handle.handle, command_list )
+  # end
+  # def subscribe( _client, _channel ) do
+  #   command_list = []
+  #   Connection.process( connection_handle.handle, command_list )
+  # end
+  # def subscribe( _client, _channel_list ) do
+  #   command_list = []
+  #   Connection.process( connection_handle.handle, command_list )
+  # end
+  # def unsubscribe( _client, _channel ) do
+  #   command_list = []
+  #   Connection.process( connection_handle.handle, command_list )
+  # end
+  # def unsubscribe( _client, _channel_list ) do
+  #   command_list = []
+  #   Connection.process( connection_handle.handle, command_list )
+  # end
 
+  #TODO: Implement these
   # Transactions
-  def discard( _client ) do
-    command_list = []
-    Connection.process( connection_handle.handle, command_list )
-  end
-  def exec( _client ) do
-    command_list = []
-    Connection.process( connection_handle.handle, command_list )
-  end
-  def multi( _client ) do
-    command_list = []
-    Connection.process( connection_handle.handle, command_list )
-  end
-  def unwatch( _client ) do
-    command_list = []
-    Connection.process( connection_handle.handle, command_list )
-  end
-  def watch( _client, _key ) do
-    command_list = []
-    Connection.process( connection_handle.handle, command_list )
-  end
-  def watch( _client, _key_list ) do
-    command_list = []
-    Connection.process( connection_handle.handle, command_list )
-  end
+  # def discard( _client ) do
+  #   command_list = []
+  #   Connection.process( connection_handle.handle, command_list )
+  # end
+  # def exec( _client ) do
+  #   command_list = []
+  #   Connection.process( connection_handle.handle, command_list )
+  # end
+  # def multi( _client ) do
+  #   command_list = []
+  #   Connection.process( connection_handle.handle, command_list )
+  # end
+  # def unwatch( _client ) do
+  #   command_list = []
+  #   Connection.process( connection_handle.handle, command_list )
+  # end
+  # def watch( _client, _key ) do
+  #   command_list = []
+  #   Connection.process( connection_handle.handle, command_list )
+  # end
+  # def watch( _client, _key_list ) do
+  #   command_list = []
+  #   Connection.process( connection_handle.handle, command_list )
+  # end
 
   # Scripting
   def eval( _client, _script, _key_list, _arg_list ) do
