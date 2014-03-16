@@ -15,8 +15,7 @@ iex(3)>   RedisEx.Client.get( client, "foo" )
 ```
 
 ## TODOs
-- unit test client and connection
-- make connection handling an OTP server with supervisor
-- add a connection pool
+- unit test client 
 - Implement ALL the commands!
 - Add an OTP Server for pub/sub operations
+- add a connection pool
