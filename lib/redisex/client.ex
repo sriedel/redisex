@@ -244,7 +244,7 @@ defmodule RedisEx.Client do
        and is_integer( offset )
        and offset >= 0
        and value in [ 0, 1 ] do
-    command_list = [ "SETBIT", key, offset, value )
+    command_list = [ "SETBIT", key, offset, value ]
     Connection.process( connection_handle.handle, command_list )
   end
 
@@ -284,66 +284,122 @@ defmodule RedisEx.Client do
   end
 
   # Hash commands
-  def hdel( _client, _key, _field ) do
-    command_list = []
+  def hdel( connection_handle, key, field_list )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) 
+       and is_list( field_list )
+       and length( field_list ) > 0 do
+    command_list = [ "HDEL", key | field_list ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def hdel( _client, _key, _field_list ) do
-    command_list = []
+
+  def hexists( connection_handle, key, field )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key )
+       and is_binary( field ) do
+    command_list = [ "HEXISTS", key, field ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def hexists( _client, _key, _field ) do
-    command_list = []
+
+  def hget( connection_handle, key, field )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key )
+       and is_binary( field ) do
+    command_list = [ "HGET", key, field ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def hget( _client, _key, _field ) do
-    command_list = []
+
+  def hgetall( connection_handle, key )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) do
+    command_list = [ "HGETALL", key ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def hgetall( _client, _key ) do
-    command_list = []
+
+  def hincrby( connection_handle, key, field, increment )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key )
+       and is_binary( field )
+       and is_integer( increment ) do
+    command_list = [ "HINCRBY", key, field, increment ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def hincrby( _client, _key, _field, _increment ) do
-    command_list = []
+
+  def hincrbyfloat( connection_handle, key, field, increment )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key )
+       and is_binary( field ) 
+       and is_float( increment ) do
+    command_list = [ "HINCRBYFLOAT", key, field, increment ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def hincrbyfloat( _client, _key, _field, _increment ) do
-    command_list = []
+
+  def hkeys( connection_handle, key )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) do
+    command_list = [ "HKEYS", key ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def hkeys( _client, _key ) do
-    command_list = []
+
+  def hlen( connection_handle, key )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) do
+    command_list = [ "HLEN", key ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def hlen( _client, _key ) do
-    command_list = []
+
+  def hmget( connection_handle, key, field_list )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) 
+       and is_list( field_list )
+       and length( field_list ) > 0 do
+    command_list = [ "HMGET", key | field_list ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def hmget( _client, _key, _field_list ) do
-    command_list = []
+
+  def hmset( connection_handle, key, field_value_list )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) 
+       and is_list( field_value_list )
+       and length( field_value_list ) > 0
+       and rem( length( field_value_list ), 2 ) == 0 do
+    command_list = [ "HMSET", key | field_value_list ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def hmset( _client, _key, _field__value_list ) do
-    command_list = []
+
+  # TODO: Implement this
+  # def hscan( connection_handle, key, cursor, opts \\ [])
+  #     when is_record( connection_handle, ConnectionHandle )
+  #      and is_binary( key ) do
+  #   command_list = []
+  #   Connection.process( connection_handle.handle, command_list )
+  # end
+
+  def hset( connection_handle, key, field, value )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key )
+       and is_binary( field )
+       and is_binary( value ) do
+    command_list = [ "HSET", key, field, value ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def hscan( _client, _key, _cursor, _opts \\ []) do
-    command_list = []
+
+  def hsetnx( connection_handle, key, field, value )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key )
+       and is_binary( field ) 
+       and is_binary( value ) do
+    command_list = [ "HSETNX", key, field, value ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def hset( _client, _key, _field, _value ) do
-    command_list = []
+
+  def hvals( connection_handle, key )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) do
+    command_list = [ "HVALS", key ]
     Connection.process( connection_handle.handle, command_list )
   end
-  def hsetnx( _client, _key, _field, _value ) do
-    command_list = []
-    Connection.process( connection_handle.handle, command_list )
-  end
-  def hvals( _client, _key ) do
-    command_list = []
-    Connection.process( connection_handle.handle, command_list )
-  end
+
 
   # List commands
   def blpop( _client, _key, _timeout ) do
