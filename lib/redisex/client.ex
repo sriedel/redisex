@@ -47,7 +47,8 @@ defmodule RedisEx.Client do
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) do
     command_list = [ "EXISTS", key ]
-    Connection.process( connection_handle.handle, command_list )
+    result = Connection.process( connection_handle.handle, command_list )
+    result == 1
   end
 
   def expire( connection_handle, key, seconds )
@@ -55,8 +56,9 @@ defmodule RedisEx.Client do
        and is_binary( key ) 
        and is_integer( seconds ) 
        and seconds >= 0 do
-    command_list = [ "EXPIRE", key, seconds ]
-    Connection.process( connection_handle.handle, command_list )
+    command_list = [ "EXPIRE", key, integer_to_binary( seconds ) ]
+    result = Connection.process( connection_handle.handle, command_list )
+    result == 1
   end
 
   def expireat( connection_handle, key, timestamp )
@@ -117,7 +119,8 @@ defmodule RedisEx.Client do
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) do
     command_list = [ "PERSIST", key ]
-    Connection.process( connection_handle.handle, command_list )
+    result = Connection.process( connection_handle.handle, command_list )
+    result == 1
   end
 
   def pexpire( connection_handle, key, milliseconds )
@@ -125,8 +128,9 @@ defmodule RedisEx.Client do
        and is_binary( key ) 
        and is_integer( milliseconds ) 
        and milliseconds > 0 do
-    command_list = [ "PEXPIRE", key, milliseconds ]
-    Connection.process( connection_handle.handle, command_list )
+    command_list = [ "PEXPIRE", key, integer_to_binary( milliseconds ) ]
+    result = Connection.process( connection_handle.handle, command_list )
+    result == 1
   end
 
   def pexpireat( connection_handle, key, millisecond_timestamp )
@@ -142,11 +146,16 @@ defmodule RedisEx.Client do
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) do
     command_list = [ "PTTL", key ]
-    Connection.process( connection_handle.handle, command_list )
+    case Connection.process( connection_handle.handle, command_list ) do
+      -2 -> nil
+      -1 -> :no_ttl
+      x when is_integer( x ) and x >= 0 -> x
+    end
   end
+
   def randomkey( connection_handle )
       when is_record( connection_handle, ConnectionHandle ) do
-    command_list = "RANDOMKEY"
+    command_list = [ "RANDOMKEY" ]
     Connection.process( connection_handle.handle, command_list )
   end
 
@@ -172,7 +181,7 @@ defmodule RedisEx.Client do
        and ttl >= 0
        and is_binary( key ) 
        and is_binary( serialized_value ) do
-    command_list = [ "RESTORE", key, ttl, serialized_value ]
+    command_list = [ "RESTORE", key, integer_to_binary( ttl ), serialized_value ]
     Connection.process( connection_handle.handle, command_list )
   end
 
@@ -192,23 +201,38 @@ defmodule RedisEx.Client do
        and is_binary( key ) do
 
     opt_list = []
-    if :store in opts, do: opt_list = [ "STORE", opts[:store] | opt_list ]
-    if :alpha in opts, do: opt_list = [ "ALPHA" | opt_list ]
-    if :asc   in opts, do: opt_list = [ "ASC" | opt_list ]
-    if :desc  in opts, do: opt_list = [ "DESC" | opt_list ]
-
-    if :get in opts do
-      get_list = Enum.map( opts[:get], fn(e) -> [ "GET", e ] end )
-      opt_list = :lists.append( get_list, opt_list )
+    case opts[:store] do
+      key when is_binary( key ) -> opt_list = [ "STORE", key | opt_list ]
+      _ -> opt_list
     end
 
-    if :limit in opts do
-      [ offset, limit ] = opts[:limit]
-      opt_list = [ "LIMIT", offset, limit | opt_list ]
+    case opts[:alpha] do
+      true -> opt_list = [ "ALPHA" | opt_list ]
+      _    -> opt_list 
     end
 
-    if :by in opts, do: opt_list = [ "BY", opts[:by] | opt_list ]
+    case opts[:order] do
+      :asc -> opt_list = [ "ASC" | opt_list ]
+      :desc -> opt_list = [ "DESC" | opt_list ]
+      _     -> opt_list
+    end
 
+    case opts[:limit] do
+      a..b when is_integer( a ) and is_integer(b) -> opt_list = [ "LIMIT", integer_to_binary(a), integer_to_binary(b) | opt_list ]
+      _ -> opt_list
+    end
+
+    case opts[:by] do
+      keypattern when is_binary( keypattern ) -> opt_list = [ "BY", keypattern | opt_list ]
+      _ -> opt_list
+    end
+
+    case opts[:get] do
+      [ keypattern, "#" ] when is_binary( keypattern ) -> opt_list = [ "GET", keypattern, "GET", "#" | opt_list ]
+      keypattern when is_binary( keypattern ) -> opt_list = [ "GET", keypattern | opt_list ]
+      "#" -> opt_list = [ "GET", "#" | opt_list ]
+      _ -> opt_list
+    end
 
     command_list = [ "SORT", key | opt_list ]
     Connection.process( connection_handle.handle, command_list )
@@ -218,14 +242,25 @@ defmodule RedisEx.Client do
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) do
     command_list = [ "TTL", key ]
-    Connection.process( connection_handle.handle, command_list )
+    case Connection.process( connection_handle.handle, command_list ) do
+      -2 -> nil
+      -1 -> :no_ttl
+      x when is_integer( x ) and x >= 0 -> x
+    end
   end
 
   def type( connection_handle, key )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) do
     command_list = [ "TYPE", key ]
-    Connection.process( connection_handle.handle, command_list )
+    case Connection.process( connection_handle.handle, command_list ) do
+      "string" -> :string
+      "list" -> :list
+      "hash" -> :hash
+      "set" -> :set
+      "zset" -> :zset
+      _ -> :none
+    end
   end
 
   # String Commands
