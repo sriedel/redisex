@@ -605,75 +605,178 @@ defmodule RedisExClientTest do
     assert Client.hvals( client, "myhash" ) == [ "v1", "v2", "v3" ]
   end
 
-  test "hscan", meta do
-    client = meta[:handle]
-  end
-
   test "blpop", meta do
     client = meta[:handle]
+    RedisCli.run( "LPUSH mylist v1 v2" )
+    RedisCli.run( "LPUSH mylist2 v3 v4" )
+
+    assert Client.blpop( client, [ "mylist", "mylist2" ], 0 ) == [ "mylist", "v2" ]
+
+    assert RedisCli.run( "LRANGE mylist 0 -1" ) == [ "v1" ]
+    assert RedisCli.run( "LRANGE mylist2 0 -1" ) == [ "v4", "v3" ]
+    #TODO: Test timeout
   end
 
   test "brpop", meta do
     client = meta[:handle]
+
+    RedisCli.run( "LPUSH mylist v1 v2" )
+    RedisCli.run( "LPUSH mylist2 v3 v4" )
+
+    assert Client.brpop( client, [ "mylist", "mylist2" ], 0 ) == [ "mylist", "v1" ]
+
+    assert RedisCli.run( "LRANGE mylist 0 -1" ) == [ "v2" ]
+    assert RedisCli.run( "LRANGE mylist2 0 -1" ) == [ "v4", "v3" ]
+    #TODO: Test timeout
   end
 
   test "brpoplpush", meta do
     client = meta[:handle]
+
+    RedisCli.run( "LPUSH mylist v1 v2" )
+    RedisCli.run( "LPUSH mylist2 v3 v4" )
+
+    assert Client.brpoplpush( client, "mylist", "mylist2", 0 ) == "v1"
+
+    assert RedisCli.run( "LRANGE mylist 0 -1" ) == [ "v2" ]
+    assert RedisCli.run( "LRANGE mylist2 0 -1" ) == [ "v1", "v4", "v3" ]
+
+    #TODO: Test timeout
   end
 
   test "lindex", meta do
     client = meta[:handle]
+    RedisCli.run( "LPUSH mylist v1 v2" )
+    assert Client.lindex( client, "mylist2", 0 ) == nil
+    assert Client.lindex( client, "mylist", 0 ) == "v2"
+    assert Client.lindex( client, "mylist", 1 ) == "v1"
+    assert Client.lindex( client, "mylist", -1 ) == "v1"
+    assert Client.lindex( client, "mylist", -2 ) == "v2"
+    assert Client.lindex( client, "mylist", 3 ) == nil
   end
 
   test "linsert", meta do
     client = meta[:handle]
+    RedisCli.run( "LPUSH mylist v1 v2" )
+
+    assert Client.linsert( client, "mylist", :before, "v1", "v0" ) == 3
+    assert Client.linsert( client, "mylist", :after, "v2", "v3" ) == 4
+    assert RedisCli.run( "LRANGE mylist 0 -1" ) == [ "v2", "v3", "v0", "v1" ]
   end
 
   test "llen", meta do
     client = meta[:handle]
+    RedisCli.run( "LPUSH mylist v1 v2" )
+    
+    assert Client.llen( client, "i_dont_exist" ) == 0
+    assert Client.llen( client, "mylist" ) == 2
   end
 
   test "lpop", meta do
     client = meta[:handle]
+    
+    RedisCli.run( "LPUSH mylist v1 v2" )
+    assert Client.lpop( client, "mylist" ) == "v2"
+    assert Client.lpop( client, "mylist" ) == "v1"
+    assert Client.lpop( client, "mylist" ) == nil
+    assert RedisCli.run( "LRANGE mylist 0 -1" ) == []
   end
 
   test "lpush", meta do
     client = meta[:handle]
+    
+    assert Client.lpush( client, "mylist", [ "v1" ] ) == 1
+    assert Client.lpush( client, "mylist", [ "v2" ] ) == 2
+    assert Client.lpush( client, "mylist", [ "v3", "v4"] ) == 4
+    assert RedisCli.run( "LRANGE mylist 0 -1" ) == [ "v4", "v3", "v2", "v1" ]
   end
 
   test "lpushx", meta do
     client = meta[:handle]
+
+    assert Client.lpushx( client, "i_dont_exist", "v1" ) == 0
+    assert RedisCli.run( "LRANGE i_dont_exist 0 -1" ) == []
+
+    assert Client.lpush( client, "mylist", [ "v1" ] ) == 1
+    assert Client.lpushx( client, "mylist", "v2" ) == 2
+    assert Client.lpushx( client, "mylist", "v3" ) == 3
+    assert RedisCli.run( "LRANGE mylist 0 -1" ) == [ "v3", "v2", "v1" ]
   end
 
   test "lrange", meta do
     client = meta[:handle]
+    RedisCli.run( "LPUSH mylist v4 v3 v2 v1" )
+
+    assert Client.lrange( client, "mylist", 0, 0 ) == [ "v1" ]
+    assert Client.lrange( client, "mylist", 1, 2 ) == [ "v2", "v3" ]
+    assert Client.lrange( client, "mylist", 0, -1 ) == [ "v1", "v2", "v3", "v4" ]
   end
 
   test "lrem", meta do
     client = meta[:handle]
+    RedisCli.run( "LPUSH mylist x o x o x o" )
+    assert Client.lrem( client, "mylist", 3, "o" ) == 3
+    assert RedisCli.run( "LRANGE mylist 0 -1" ) == [ "x", "x", "x" ]
   end
 
   test "lset", meta do
     client = meta[:handle]
+
+    RedisCli.run( "LPUSH mylist 4 3 2 1" )
+    assert Client.lset( client, "mylist", 2, "x" ) == "OK"
+    assert RedisCli.run( "LRANGE mylist 0 -1" ) == [ "1", "2", "x", "4" ]
   end
 
   test "ltrim", meta do
     client = meta[:handle]
+
+    RedisCli.run( "LPUSH mylist 4 3 2 1" )
+    assert Client.ltrim( client, "mylist", 1, 2 ) == "OK"
+    assert RedisCli.run( "LRANGE mylist 0 -1" ) == [ "2", "3" ]
   end
 
   test "rpop", meta do
     client = meta[:handle]
+
+    RedisCli.run( "LPUSH mylist 4 3 2 1" )
+
+    assert Client.rpop( client, "mylist" ) == "4"
+    assert Client.rpop( client, "mylist" ) == "3"
+    assert Client.rpop( client, "mylist" ) == "2"
+    assert Client.rpop( client, "mylist" ) == "1"
+    assert Client.rpop( client, "mylist" ) == nil
   end
 
   test "rpoplpush", meta do
     client = meta[:handle]
+    RedisCli.run( "LPUSH mylist 4 3 2 1" )
+    RedisCli.run( "LPUSH mylist2 d c b a" )
+    
+    assert Client.rpoplpush( client, "mylist", "mylist2" ) == "4"
+    assert RedisCli.run( "LRANGE mylist 0 -1" ) == [ "1", "2", "3" ]
+    assert RedisCli.run( "LRANGE mylist2 0 -1" ) == [ "4", "a", "b", "c", "d" ]
   end
 
   test "rpush", meta do
     client = meta[:handle]
+    RedisCli.run( "LPUSH mylist 4 3 2 1" )
+
+    assert Client.rpush( client, "mylist", [ "5" ] ) == 5
+    assert Client.rpush( client, "mylist", [ "6", "7" ] ) == 7
+
+    assert RedisCli.run( "LRANGE mylist 0 -1" ) == [ "1", "2", "3", "4", "5", "6", "7" ]
   end
 
   test "prushx", meta do
     client = meta[:handle]
+    RedisCli.run( "LPUSH mylist 4 3 2 1" )
+
+    assert Client.rpushx( client, "i_dont_exist", "v1" ) == 0
+    assert RedisCli.run( "LRANGE i_dont_exist 0 -1" ) == []
+
+    assert Client.rpush( client, "mylist", [ "v1" ] ) == 5
+    assert Client.rpushx( client, "mylist", "v2" ) == 6
+    assert Client.rpushx( client, "mylist", "v3" ) == 7
+    assert RedisCli.run( "LRANGE mylist 0 -1" ) == [ "1", "2", "3", "4", "v1", "v2", "v3" ]
   end
 end

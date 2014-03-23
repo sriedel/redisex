@@ -669,7 +669,7 @@ defmodule RedisEx.Client do
        and length( key_list ) > 0
        and is_integer( seconds )
        and seconds >= 0 do
-    command_list = [ "BLPOP" | key_list ] ++ [ seconds ]
+    command_list = [ "BLPOP" | key_list ] ++ [ integer_to_binary( seconds ) ]
     Connection.process( connection_handle.handle, command_list )
   end
 
@@ -679,7 +679,7 @@ defmodule RedisEx.Client do
        and length( key_list ) > 0
        and is_integer( seconds )
        and seconds >= 0 do
-    command_list = [ "BRPOP" | key_list ] ++ [ seconds ]
+    command_list = [ "BRPOP" | key_list ] ++ [ integer_to_binary( seconds ) ]
     Connection.process( connection_handle.handle, command_list )
   end
 
@@ -689,7 +689,7 @@ defmodule RedisEx.Client do
        and is_binary( destination )
        and is_integer( seconds )
        and seconds >= 0 do
-    command_list = [ "BRPOPLPUSH", source, destination, seconds ]
+    command_list = [ "BRPOPLPUSH", source, destination, integer_to_binary( seconds ) ]
     Connection.process( connection_handle.handle, command_list )
   end
 
@@ -697,7 +697,7 @@ defmodule RedisEx.Client do
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) 
        and is_integer( index ) do
-    command_list = [ "LINDEX", key, index ]
+    command_list = [ "LINDEX", key, integer_to_binary( index ) ]
     Connection.process( connection_handle.handle, command_list )
   end
 
@@ -728,6 +728,7 @@ defmodule RedisEx.Client do
   def lpush( connection_handle, key, value_list )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) 
+
        and is_list( value_list )
        and length( value_list ) > 0 do
     command_list = [ "LPUSH", key | value_list ]
@@ -747,7 +748,7 @@ defmodule RedisEx.Client do
        and is_binary( key )
        and is_integer( range_start )
        and is_integer( range_end ) do
-    command_list = [ "LRANGE", key, range_start, range_end ]
+    command_list = [ "LRANGE", key, integer_to_binary( range_start ), integer_to_binary( range_end ) ]
     Connection.process( connection_handle.handle, command_list )
   end
 
@@ -756,7 +757,7 @@ defmodule RedisEx.Client do
        and is_binary( key ) 
        and is_integer( count ) 
        and is_binary( value ) do
-    command_list = [ "LREM", key, count, value ]
+    command_list = [ "LREM", key, integer_to_binary( count ), value ]
     Connection.process( connection_handle.handle, command_list )
   end
 
@@ -765,7 +766,7 @@ defmodule RedisEx.Client do
        and is_binary( key ) 
        and is_integer( index )
        and is_binary( value ) do
-    command_list = [ "LSET", key, index, value ]
+    command_list = [ "LSET", key, integer_to_binary( index ), value ]
     Connection.process( connection_handle.handle, command_list )
   end
 
@@ -774,7 +775,7 @@ defmodule RedisEx.Client do
        and is_binary( key ) 
        and is_integer( range_start )
        and is_integer( range_end ) do
-    command_list = [ "LTRIM", key, range_start, range_end ]
+    command_list = [ "LTRIM", key, integer_to_binary( range_start ), integer_to_binary( range_end ) ]
     Connection.process( connection_handle.handle, command_list )
   end
 
