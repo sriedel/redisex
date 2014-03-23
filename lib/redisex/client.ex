@@ -868,7 +868,11 @@ defmodule RedisEx.Client do
        and is_binary( key ) 
        and is_binary( member ) do
     command_list = [ "SISMEMBER", key, member ]
-    Connection.process( connection_handle.handle, command_list )
+    case Connection.process( connection_handle.handle, command_list ) do
+      1 -> true
+      0 -> false
+      other -> other
+    end
   end
 
   def smembers( connection_handle, key )
@@ -884,7 +888,11 @@ defmodule RedisEx.Client do
        and is_binary( destination_key ) 
        and is_binary( member ) do
     command_list = [ "SMOVE", source_key, destination_key, member ]
-    Connection.process( connection_handle.handle, command_list )
+    case Connection.process( connection_handle.handle, command_list ) do
+      1 -> true
+      0 -> false
+      other -> other
+    end
   end
 
   def spop( connection_handle, key )

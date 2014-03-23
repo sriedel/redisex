@@ -779,4 +779,198 @@ defmodule RedisExClientTest do
     assert Client.rpushx( client, "mylist", "v3" ) == 7
     assert RedisCli.run( "LRANGE mylist 0 -1" ) == [ "1", "2", "3", "4", "v1", "v2", "v3" ]
   end
+
+  test "sadd", meta do
+    client = meta[:handle]
+    assert Client.sadd( client, "myset", [ "foo", "bar" ] ) == 2
+    assert Client.sadd( client, "myset", [ "foo", "baz" ] ) == 1
+
+    assert RedisCli.run( "SMEMBERS myset" ) == [ "baz", "foo", "bar" ]
+  end
+
+  test "scard", meta do
+    client = meta[:handle]
+
+    RedisCli.run( "SADD myset foo bar baz" )
+    assert Client.scard( client, "i_dont_exist" ) == 0
+    assert Client.scard( client, "myset" ) == 3
+  end
+
+  test "sdiff", meta do
+    client = meta[:handle]
+
+    RedisCli.run( "SADD set1 a b c" )
+    RedisCli.run( "SADD set2 b c" )
+
+    assert Client.sdiff( client, [ "set1", "set2" ] ) == [ "a" ]
+  end
+
+  test "sdiffstore", meta do
+    client = meta[:handle]
+    RedisCli.run( "SADD set1 a b c" )
+    RedisCli.run( "SADD set2 b c" )
+
+    assert Client.sdiffstore( client, "destset", [ "set1", "set2" ] ) == 1
+    RedisCli.run( "SMEMBERS destset" ) == [ "a" ]
+  end
+
+  test "sinter", meta do
+    client = meta[:handle]
+
+    RedisCli.run( "SADD set1 a b c" )
+    RedisCli.run( "SADD set2 b c" )
+
+    assert Client.sinter( client, [ "set1", "set2" ] ) == [ "c", "b" ]
+  end
+
+  test "sinterstore", meta do
+    client = meta[:handle]
+    RedisCli.run( "SADD set1 a b c" )
+    RedisCli.run( "SADD set2 b c" )
+
+    assert Client.sinterstore( client, "destset", [ "set1", "set2" ] ) == 2
+    RedisCli.run( "SMEMBERS destset" ) == [ "c", "b" ]
+  end
+
+  test "sismember", meta do
+    client = meta[:handle]
+
+    RedisCli.run( "SADD set b c" )
+    assert Client.sismember( client, "i_dont_exist", "a" ) == false
+    assert Client.sismember( client, "set", "a" ) == false
+    assert Client.sismember( client, "set", "b" ) == true
+  end
+
+  test "smembers", meta do
+    client = meta[:handle]
+    RedisCli.run( "SADD set a b c" )
+    assert Client.smembers( client, "set" ) == [ "c", "a", "b" ]
+  end
+
+  test "smove", meta do
+    client = meta[:handle]
+
+    RedisCli.run( "SADD set1 a b c" )
+    RedisCli.run( "SADD set2 b c" )
+
+    assert Client.smove( client, "set2", "set1", "a" ) == false
+    assert Client.smove( client, "set1", "set2", "a" ) == true
+  end
+
+  test "spop", meta do
+    client = meta[:handle]
+    RedisCli.run( "SADD set a b c" )
+
+    Client.spop( client, "set" )
+    assert Client.scard( client, "set" ) == 2
+    Client.spop( client, "set" )
+    assert Client.scard( client, "set" ) == 1
+    Client.spop( client, "set" )
+    assert Client.spop( client, "set" ) == nil
+  end
+
+  # test "srandmember", meta do
+  #   client = meta[:handle]
+  # end
+
+  test "srem", meta do
+    client = meta[:handle]
+    RedisCli.run( "SADD set a b c" )
+
+    assert Client.srem( client, "set", [ "a", "c" ] ) == 2
+    assert RedisCli.run( "SMEMBERS set" ) == [ "b" ]
+  end
+
+  test "sunion", meta do
+    client = meta[:handle]
+
+    RedisCli.run( "SADD set1 a b d" )
+    RedisCli.run( "SADD set2 b c" )
+
+    assert Client.sunion( client, [ "set1", "set2" ] ) == [ "c", "a", "b", "d" ]
+  end
+
+  test "sunionstore", meta do
+    client = meta[:handle]
+
+    RedisCli.run( "SADD set1 a b d" )
+    RedisCli.run( "SADD set2 b c" )
+
+    assert Client.sunionstore( client, "destset", [ "set1", "set2" ] ) == 4
+    RedisCli.run( "SMEMBERS destset" ) == [ "a", "b", "c", "d" ]
+  end
+
+  # test "sscan", meta do
+  #   client = meta[:handle]
+  # end
+
+  test "zadd", meta do
+    client = meta[:handle]
+  end
+
+  test "zcard", meta do
+    client = meta[:handle]
+  end
+
+  test "zcount", meta do
+    client = meta[:handle]
+  end
+
+  test "zincrby", meta do
+    client = meta[:handle]
+  end
+
+  test "zinterstore", meta do
+    client = meta[:handle]
+  end
+
+  test "zrange", meta do
+    client = meta[:handle]
+  end
+
+  test "zrangebyscore", meta do
+    client = meta[:handle]
+  end
+
+  test "zrank", meta do
+    client = meta[:handle]
+  end
+
+  test "zrem", meta do
+    client = meta[:handle]
+  end
+
+  test "zremrangebyrank", meta do
+    client = meta[:handle]
+  end
+
+  test "zremrangebyscore", meta do
+    client = meta[:handle]
+  end
+
+  test "zrevrange", meta do
+    client = meta[:handle]
+  end
+
+  test "zrevrangebyscore", meta do
+    client = meta[:handle]
+  end
+
+  test "zrevrank", meta do
+    client = meta[:handle]
+  end
+
+  test "zscore", meta do
+    client = meta[:handle]
+  end
+
+  test "zunionstore", meta do
+    client = meta[:handle]
+  end
+
+  test "zscan", meta do
+    client = meta[:handle]
+  end
+
+
 end
