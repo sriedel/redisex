@@ -279,35 +279,25 @@ defmodule RedisEx.Client do
     Connection.process( connection_handle.handle, command_list )
   end
 
-  def bitcount( connection_handle, key, range_start ) 
-      when is_record( connection_handle, ConnectionHandle )
-       and is_binary( key )
-       and is_integer( range_start ) do
-
-    command_list = [ "BITCOUNT", key, range_start ]
-    Connection.process( connection_handle.handle, command_list )
-  end
-
   def bitcount( connection_handle, key, range_start, range_end ) 
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key )
        and is_integer( range_start )
        and is_integer( range_end ) do
-    command_list = [ "BITCOUNT", key, range_start, range_end ]
+    command_list = [ "BITCOUNT", key, integer_to_binary(range_start), integer_to_binary(range_end) ]
     Connection.process( connection_handle.handle, command_list )
   end
 
-  def bitop( connection_handle, op, dest_key, key ) 
-      when op in [:AND, :OR, :XOR, :NOT] 
-       and is_binary( key ) 
+  def bitop( connection_handle, :NOT, dest_key, key ) 
+      when is_binary( key ) 
        and is_binary( dest_key )
        and is_record( connection_handle, ConnectionHandle ) do
-    command_list = [ "BITOP", atom_to_binary( op ), dest_key, key ]
+    command_list = [ "BITOP", "NOT", dest_key, key ]
     Connection.process( connection_handle.handle, command_list )
   end
 
   def bitop( connection_handle, op, dest_key, key_list ) 
-      when op in [:AND, :OR, :XOR, :NOT] 
+      when op in [:AND, :OR, :XOR] 
        and is_list( key_list)  
        and is_binary( dest_key )
        and is_list( key_list )
@@ -320,7 +310,7 @@ defmodule RedisEx.Client do
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key )
        and bit in [ 0, 1 ] do
-    command_list = [ "BITPOS", key, bit ]
+    command_list = [ "BITPOS", key, integer_to_binary( bit ) ]
     Connection.process( connection_handle.handle, command_list )
   end
 
@@ -329,7 +319,7 @@ defmodule RedisEx.Client do
        and is_binary( key )
        and bit in [ 0, 1 ]
        and is_integer( range_start ) do
-    command_list = [ "BITPOS", key, bit, range_start ]
+    command_list = [ "BITPOS", key, integer_to_binary( bit ), integer_to_binary( range_start ) ]
     Connection.process( connection_handle.handle, command_list )
   end
 
@@ -339,7 +329,7 @@ defmodule RedisEx.Client do
        and bit in [ 0, 1 ] 
        and is_integer( range_start )
        and is_integer( range_end ) do
-    command_list = [ "BITPOS", key, bit, range_start, range_end ]
+    command_list = [ "BITPOS", key, integer_to_binary( bit ), integer_to_binary( range_start ), integer_to_binary( range_end ) ]
     Connection.process( connection_handle.handle, command_list )
   end
 
@@ -354,7 +344,7 @@ defmodule RedisEx.Client do
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key )
        and is_integer( increment ) do
-    command_list = [ "DECRBY", key, increment ]
+    command_list = [ "DECRBY", key, integer_to_binary( increment ) ]
     Connection.process( connection_handle.handle, command_list )
   end
 
@@ -370,7 +360,7 @@ defmodule RedisEx.Client do
        and is_binary( key )
        and is_integer( offset )
        and offset >= 0 do
-    command_list = [ "GETBIT", key ]
+    command_list = [ "GETBIT", key, integer_to_binary( offset ) ]
     Connection.process( connection_handle.handle, command_list )
   end
 
@@ -379,7 +369,7 @@ defmodule RedisEx.Client do
        and is_binary( key ) 
        and is_integer( range_start )
        and is_integer( range_end ) do
-    command_list = [ "GETRANGE", key, range_start, range_end ]
+    command_list = [ "GETRANGE", key, integer_to_binary(range_start), integer_to_binary(range_end) ]
     Connection.process( connection_handle.handle, command_list )
   end
 
@@ -402,16 +392,30 @@ defmodule RedisEx.Client do
       when is_record( connection_handle, ConnectionHandle ) 
        and is_binary( key ) 
        and is_integer( increment ) do
-    command_list = [ "INCRBY", key, increment ]
+    command_list = [ "INCRBY", key, integer_to_binary( increment ) ]
     Connection.process( connection_handle.handle, command_list )
   end
 
   def incrbyfloat( connection_handle, key, increment ) 
       when is_record( connection_handle, ConnectionHandle ) 
        and is_binary( key )
-       and is_float( increment ) do
+       and is_binary( increment ) do
     command_list = [ "INCRBYFLOAT", key, increment ]
-    Connection.process( connection_handle.handle, command_list )
+    result = Connection.process( connection_handle.handle, command_list )
+    case result do
+      { :redis_error, error_message } -> { :redis_error, error_message }
+      float_as_binary -> if String.contains?( float_as_binary, "." ) do
+                           binary_to_float( float_as_binary )
+                         else
+                           binary_to_integer( float_as_binary ) * 1.0
+                         end
+    end
+  end
+  def incrbyfloat( connection_handle, key, increment ) 
+      when is_record( connection_handle, ConnectionHandle ) 
+       and is_binary( key )
+       and is_float( increment ) do
+    incrbyfloat( connection_handle, key, float_to_binary(increment)  )
   end
 
   def mget( connection_handle, key_list ) 
@@ -437,7 +441,11 @@ defmodule RedisEx.Client do
        and length( key_value_list ) > 0
        and rem( length( key_value_list ), 2 ) == 0 do
     command_list = [ "MSETNX" | key_value_list ]
-    Connection.process( connection_handle.handle, command_list )
+    case Connection.process( connection_handle.handle, command_list ) do
+      1 -> true
+      0 -> false
+    end
+
   end
 
   def psetex( connection_handle, key, milliseconds, value ) 
@@ -445,10 +453,11 @@ defmodule RedisEx.Client do
        and is_binary( key )
        and is_integer( milliseconds )
        and is_binary( value ) do
-    command_list = [ "PSETEX", key, milliseconds, value ]
+    command_list = [ "PSETEX", key, integer_to_binary( milliseconds ), value ]
     Connection.process( connection_handle.handle, command_list )
   end
 
+  #TODO: Support set options
   def set( connection_handle, key, value ) 
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) 
@@ -463,7 +472,7 @@ defmodule RedisEx.Client do
        and is_integer( offset )
        and offset >= 0
        and value in [ 0, 1 ] do
-    command_list = [ "SETBIT", key, offset, value ]
+    command_list = [ "SETBIT", key, integer_to_binary( offset ), integer_to_binary( value ) ]
     Connection.process( connection_handle.handle, command_list )
   end
 
@@ -473,7 +482,7 @@ defmodule RedisEx.Client do
        and is_integer( seconds )
        and seconds >= 0
        and is_binary( value ) do
-    command_list = [ "SETEX", key, seconds, value ]
+    command_list = [ "SETEX", key, integer_to_binary( seconds ), value ]
     Connection.process( connection_handle.handle, command_list )
   end
 
@@ -482,7 +491,10 @@ defmodule RedisEx.Client do
        and is_binary( key )
        and is_binary( value ) do
     command_list = [ "SETNX", key, value ]
-    Connection.process( connection_handle.handle, command_list )
+    case Connection.process( connection_handle.handle, command_list ) do
+      1 -> true
+      0 -> false
+    end
   end
 
   def setrange( connection_handle, key, offset, value ) 
@@ -491,7 +503,7 @@ defmodule RedisEx.Client do
        and is_integer( offset )
        and offset >= 0
        and is_binary( value ) do
-    command_list = [ "SETRANGE", key, offset, value ]
+    command_list = [ "SETRANGE", key, integer_to_binary( offset ), value ]
     Connection.process( connection_handle.handle, command_list )
   end
 
