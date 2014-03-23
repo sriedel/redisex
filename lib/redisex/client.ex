@@ -529,7 +529,10 @@ defmodule RedisEx.Client do
        and is_binary( key )
        and is_binary( field ) do
     command_list = [ "HEXISTS", key, field ]
-    Connection.process( connection_handle.handle, command_list )
+    case Connection.process( connection_handle.handle, command_list ) do
+      1 -> true
+      0 -> false
+    end
   end
 
   def hget( connection_handle, key, field )
@@ -552,7 +555,7 @@ defmodule RedisEx.Client do
        and is_binary( key )
        and is_binary( field )
        and is_integer( increment ) do
-    command_list = [ "HINCRBY", key, field, increment ]
+    command_list = [ "HINCRBY", key, field, integer_to_binary( increment ) ]
     Connection.process( connection_handle.handle, command_list )
   end
 
@@ -560,9 +563,24 @@ defmodule RedisEx.Client do
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key )
        and is_binary( field ) 
-       and is_float( increment ) do
+       and is_binary( increment ) do
     command_list = [ "HINCRBYFLOAT", key, field, increment ]
-    Connection.process( connection_handle.handle, command_list )
+    case Connection.process( connection_handle.handle, command_list ) do
+      { :redis_error, error_message } -> { :redis_error, error_message }
+      float_as_binary -> if String.contains?( float_as_binary, "." ) do
+                           binary_to_float( float_as_binary )
+                         else
+                           binary_to_integer( float_as_binary ) * 1.0
+                         end
+    end
+  end
+
+  def hincrbyfloat( connection_handle, key, field, increment )
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key )
+       and is_binary( field ) 
+       and is_float( increment ) do
+    hincrbyfloat( connection_handle, key, field, float_to_binary( increment ) )
   end
 
   def hkeys( connection_handle, key )
@@ -616,7 +634,11 @@ defmodule RedisEx.Client do
        and is_binary( field )
        and is_binary( value ) do
     command_list = [ "HSET", key, field, value ]
-    Connection.process( connection_handle.handle, command_list )
+    case Connection.process( connection_handle.handle, command_list ) do
+      1 -> :insert
+      0 -> :update
+      other -> other
+    end
   end
 
   def hsetnx( connection_handle, key, field, value )
@@ -625,7 +647,11 @@ defmodule RedisEx.Client do
        and is_binary( field ) 
        and is_binary( value ) do
     command_list = [ "HSETNX", key, field, value ]
-    Connection.process( connection_handle.handle, command_list )
+    case Connection.process( connection_handle.handle, command_list ) do
+      1 -> true
+      0 -> false
+      other -> other
+    end
   end
 
   def hvals( connection_handle, key )

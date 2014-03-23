@@ -50,8 +50,8 @@ defmodule RedisExClientTest do
     assert RedisCli.run( "TTL foo" ) == [ "3600" ]
   end
 
-  test "expireat", meta do
-  end
+  # test "expireat", meta do
+  # end
 
   test "keys", meta do
     client = meta[:handle]
@@ -66,14 +66,14 @@ defmodule RedisExClientTest do
     assert Client.keys( client, "b*" ) == [ "baz" ]
   end
 
-  test "migrate", meta do
-  end
+  # test "migrate", meta do
+  # end
 
-  test "move", meta do
-  end
+  # test "move", meta do
+  # end
 
-  test "object", meta do
-  end
+  # test "object", meta do
+  # end
 
   test "persist", meta do
     client = meta[:handle]
@@ -99,8 +99,8 @@ defmodule RedisExClientTest do
     assert RedisCli.run( "TTL foo" ) == [ "360" ]
   end
 
-  test "pexpireat", meta do
-  end
+  # test "pexpireat", meta do
+  # end
 
   test "pttl", meta do
     client = meta[:handle]
@@ -177,8 +177,8 @@ defmodule RedisExClientTest do
     assert RedisCli.run( "TTL foo" ) == [ "3600" ]
   end
 
-  test "scan", meta do
-  end
+  # test "scan", meta do
+  # end
 
   test "sort", meta do
     client = meta[:handle]
@@ -279,7 +279,7 @@ defmodule RedisExClientTest do
     assert RedisCli.run( "GET fooxorbaz" ) == [<<19, 20, 7, 120>>]
   end
 
-  test "bitpos", meta do
+  # test "bitpos", meta do
 #  #TODO: Re-enable after 2.8.7
 #     client = meta[:handle]
 # 
@@ -287,7 +287,7 @@ defmodule RedisExClientTest do
 #     assert Client.bitpos( client, "foo", 0 ) == 0
 #     assert Client.bitpos( client, "foo", 0, 2, 4 ) == 4
 #     assert Client.bitpos( client, "foo", 0, 2, 3 ) == -1
-  end
+  # end
 
   test "decr", meta do
     client = meta[:handle]
@@ -400,9 +400,9 @@ defmodule RedisExClientTest do
 
     RedisCli.run( "SET foo bar" )
     assert Client.mset( client, [ "bar", "baz", "foo", "quux", "bla", "blubb" ] ) == "OK"
-    RedisCli.run( "GET bar" ) == [ "baz" ]
-    RedisCli.run( "GET foo" ) == [ "quux" ]
-    RedisCli.run( "GET bla" ) == [ "blubb" ]
+    assert RedisCli.run( "GET bar" ) == [ "baz" ]
+    assert RedisCli.run( "GET foo" ) == [ "quux" ]
+    assert RedisCli.run( "GET bla" ) == [ "blubb" ]
   end
 
   test "msetnx", meta do
@@ -413,9 +413,9 @@ defmodule RedisExClientTest do
 
     RedisCli.run( "DEL foo" )
     assert Client.mset( client, [ "bar", "baz", "foo", "quux", "bla", "blubb" ] ) == "OK"
-    RedisCli.run( "GET bar" ) == [ "baz" ]
-    RedisCli.run( "GET foo" ) == [ "quux" ]
-    RedisCli.run( "GET bla" ) == [ "blubb" ]
+    assert RedisCli.run( "GET bar" ) == [ "baz" ]
+    assert RedisCli.run( "GET foo" ) == [ "quux" ]
+    assert RedisCli.run( "GET bla" ) == [ "blubb" ]
   end
 
   test "psetex", meta do
@@ -478,6 +478,202 @@ defmodule RedisExClientTest do
     
     RedisCli.run( "SET foo blablubb" )
     assert Client.strlen( client, "foo" ) == 8
-    
+  end
+
+  test "hdel", meta do
+    client = meta[:handle]
+
+    assert Client.hdel( client, "i_dont_exist", ["f1"] ) == 0
+
+    RedisCli.run( "HMSET myhash f1 v1 f2 v2 f3 v3" )
+    assert Client.hdel( client, "myhash", ["f1"] ) == 1
+    assert Client.hdel( client, "myhash", ["f1"] ) == 0
+    assert RedisCli.run( "HGETALL myhash" ) == [ "f2", "v2", "f3", "v3" ]
+  end
+
+  test "hexists", meta do
+    client = meta[:handle]
+    RedisCli.run( "HMSET myhash f1 v1 f2 v2 f3 v3" )
+
+    assert Client.hexists( client, "i_dont_exists", "f1" ) == false
+    assert Client.hexists( client, "myhash", "f10" ) == false
+    assert Client.hexists( client, "myhash", "f1" ) == true
+  end
+
+  test "hget", meta do
+    client = meta[:handle]
+    RedisCli.run( "HMSET myhash f1 v1 f2 v2 f3 v3" )
+
+    assert Client.hget( client, "i_dont_exist", "f1" ) == nil
+    assert Client.hget( client, "myhash", "i_dont_exist" ) == nil
+    assert Client.hget( client, "myhash", "f1" ) == "v1"
+  end
+
+  test "hgetall", meta do
+    client = meta[:handle]
+    RedisCli.run( "HMSET myhash f1 v1 f2 v2 f3 v3" )
+    assert Client.hgetall( client, "i_dont_exist" ) == []
+    assert Client.hgetall( client, "myhash" ) == [ "f1", "v1", "f2", "v2", "f3", "v3" ]
+  end
+
+  test "hincrby", meta do
+    client = meta[:handle]
+    assert Client.hincrby( client, "i_dont_exist", "i1", 1 ) == 1
+    assert RedisCli.run( "HGET i_dont_exist i1" ) == [ "1" ]
+
+    RedisCli.run( "HMSET myhash f1 v1 f2 v2 f3 v3" )
+    assert Client.hincrby( client, "myhash", "i1", 10 ) == 10
+    assert RedisCli.run( "HGET myhash i1" ) == [ "10" ]
+    assert Client.hincrby( client, "myhash", "i1", 10 ) == 20
+    assert RedisCli.run( "HGET myhash i1" ) == [ "20" ]
+  end
+
+  test "hincrbyfloat", meta do
+    client = meta[:handle]
+    assert Client.hincrbyfloat( client, "i_dont_exist", "i1", 1.0 ) == 1.0
+    assert RedisCli.run( "HGET i_dont_exist i1" ) == [ "1" ]
+
+    RedisCli.run( "HMSET myhash f1 v1 f2 v2 f3 v3" )
+    assert Client.hincrbyfloat( client, "myhash", "i1", "1e5" ) == 100000.0
+    assert RedisCli.run( "HGET myhash i1" ) == [ "100000" ]
+    assert Client.hincrbyfloat( client, "myhash", "i1", 10.0 ) == 100010.0
+    assert RedisCli.run( "HGET myhash i1" ) == [ "100010" ]
+  end
+
+  test "hkeys", meta do
+    client = meta[:handle]
+    RedisCli.run( "HMSET myhash f1 v1 f2 v2 f3 v3" )
+
+    assert Client.hkeys( client, "i_dont_exist" ) == []
+    assert Client.hkeys( client, "myhash" ) == [ "f1", "f2", "f3" ]
+  end
+
+  test "hlen", meta do
+    client = meta[:handle]
+    RedisCli.run( "HMSET myhash f1 v1 f2 v2 f3 v3" )
+
+    assert Client.hlen( client, "i_dont_exist" ) == 0
+    assert Client.hlen( client, "myhash" ) == 3 
+  end
+
+  test "hmget", meta do
+    client = meta[:handle]
+    RedisCli.run( "HMSET myhash f1 v1 f2 v2 f3 v3" )
+
+    assert Client.hmget( client, "i_dont_exist", [ "foo", "bar" ] ) == [nil, nil]
+    assert Client.hmget( client, "myhash", [ "f1", "f5", "f3" ] ) == [ "v1", nil, "v3" ]
+  end
+
+  test "hmset", meta do
+    client = meta[:handle]
+    RedisCli.run( "HMSET myhash f1 v1 f2 v2 f3 v3" )
+
+    assert Client.hmset( client, "myhash", [ "f1", "x1", "f5", "x5" ] ) == "OK"
+    assert RedisCli.run( "HGETALL myhash" ) == [ "f1", "x1", "f2", "v2", "f3", "v3", "f5", "x5" ]
+  end
+
+  # test "hscan", meta do
+  # end
+
+  test "hset", meta do
+    client = meta[:handle]
+    assert Client.hset( client, "newhash", "field", "value" ) == :insert
+    assert Client.hset( client, "newhash", "field", "value2" ) == :update
+
+    RedisCli.run( "HMSET myhash f1 v1 f2 v2 f3 v3" )
+    assert Client.hset( client, "myhash", "f2", "x2" ) == :update
+    assert RedisCli.run( "HGETALL myhash" ) == [ "f1", "v1", "f2", "x2", "f3", "v3" ]
+  end
+
+  test "hsetnx", meta do
+    client = meta[:handle]
+
+    assert Client.hsetnx( client, "newhash", "field", "value" ) == true
+    assert Client.hsetnx( client, "newhash", "field", "value2" ) == false
+
+    RedisCli.run( "HMSET myhash f1 v1 f2 v2 f3 v3" )
+    assert Client.hsetnx( client, "myhash", "f2", "x2" ) == false
+    assert RedisCli.run( "HGETALL myhash" ) == [ "f1", "v1", "f2", "v2", "f3", "v3" ]
+  end
+
+  test "hvals", meta do
+    client = meta[:handle]
+
+    assert Client.hvals( client, "i_dont_exist" ) == []
+
+    RedisCli.run( "HMSET myhash f1 v1 f2 v2 f3 v3" )
+    assert Client.hvals( client, "myhash" ) == [ "v1", "v2", "v3" ]
+  end
+
+  test "hscan", meta do
+    client = meta[:handle]
+  end
+
+  test "blpop", meta do
+    client = meta[:handle]
+  end
+
+  test "brpop", meta do
+    client = meta[:handle]
+  end
+
+  test "brpoplpush", meta do
+    client = meta[:handle]
+  end
+
+  test "lindex", meta do
+    client = meta[:handle]
+  end
+
+  test "linsert", meta do
+    client = meta[:handle]
+  end
+
+  test "llen", meta do
+    client = meta[:handle]
+  end
+
+  test "lpop", meta do
+    client = meta[:handle]
+  end
+
+  test "lpush", meta do
+    client = meta[:handle]
+  end
+
+  test "lpushx", meta do
+    client = meta[:handle]
+  end
+
+  test "lrange", meta do
+    client = meta[:handle]
+  end
+
+  test "lrem", meta do
+    client = meta[:handle]
+  end
+
+  test "lset", meta do
+    client = meta[:handle]
+  end
+
+  test "ltrim", meta do
+    client = meta[:handle]
+  end
+
+  test "rpop", meta do
+    client = meta[:handle]
+  end
+
+  test "rpoplpush", meta do
+    client = meta[:handle]
+  end
+
+  test "rpush", meta do
+    client = meta[:handle]
+  end
+
+  test "prushx", meta do
+    client = meta[:handle]
   end
 end
