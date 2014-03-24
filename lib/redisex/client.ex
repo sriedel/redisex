@@ -1405,7 +1405,7 @@ defmodule RedisEx.Client do
        and is_list( key_list ) 
        and is_list( arg_list ) do
     key_arg_list = :lists.append( key_list, arg_list )
-    command_list = [ "EVAL", script, length( key_list ) | key_arg_list ]
+    command_list = [ "EVAL", script, integer_to_binary( length( key_list ) ) | key_arg_list ]
     Connection.process( connection_handle.handle, command_list )
   end
 
@@ -1415,7 +1415,7 @@ defmodule RedisEx.Client do
        and is_list( key_list )
        and is_list( arg_list ) do
     key_arg_list = :lists.append( key_list, arg_list )
-    command_list = [ "EVALSHA", sha_digest, length( key_list ) | key_arg_list ]
+    command_list = [ "EVALSHA", sha_digest, integer_to_binary( length( key_list ) ) | key_arg_list ]
     Connection.process( connection_handle.handle, command_list )
   end
 
@@ -1423,26 +1423,26 @@ defmodule RedisEx.Client do
       when is_record( connection_handle, ConnectionHandle )
        and is_list( script_list )
        and length( script_list ) > 0 do
-    command_list = [ "SCRIPT EXISTS" | script_list ]
+    command_list = [ "SCRIPT", "EXISTS" | script_list ]
     Connection.process( connection_handle.handle, command_list )
   end
 
   def script_flush( connection_handle )
       when is_record( connection_handle, ConnectionHandle ) do
-    command_list = [ "SCRIPT FLUSH" ]
+    command_list = [ "SCRIPT", "FLUSH" ]
     Connection.process( connection_handle.handle, command_list )
   end
 
   def script_kill( connection_handle )
       when is_record( connection_handle, ConnectionHandle ) do
-    command_list = [ "SCRIPT KILL" ]
+    command_list = [ "SCRIPT", "KILL" ]
     Connection.process( connection_handle.handle, command_list )
   end
 
   def script_load( connection_handle, script )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( script ) do
-    command_list = [ "SCRIPT LOAD", script ]
+    command_list = [ "SCRIPT", "LOAD", script ]
     Connection.process( connection_handle.handle, command_list )
   end
 

@@ -1104,9 +1104,52 @@ defmodule RedisExClientTest do
                                                                     "x", "5" ]
   end
 
-  test "zscan", meta do
+  # test "zscan", meta do
+  #   client = meta[:handle]
+  # end
+
+  test "eval", meta do
     client = meta[:handle]
+
+    assert Client.eval( client, "return 'Hello World'", [], [] ) == "Hello World" 
   end
 
+  test "evalsha", meta do
+    client = meta[:handle]
+    script = "return \'Hello World\'"
+    [sha] = RedisCli.run( "SCRIPT LOAD \"#{script}\"" )
+    assert Client.evalsha( client, sha, [], [] ) == "Hello World"
+  end
+
+  test "script_exists", meta do
+    client = meta[:handle]
+    assert Client.script_exists( client, [ "e0e1f9fabfc9d4800c877a703b823ac0578ff8db" ] ) == [ 0 ]
+
+    script = "return \'Hello World\'"
+    [sha] = RedisCli.run( "SCRIPT LOAD \"#{script}\"" )
+
+    assert Client.script_exists( client, [ sha ] ) == [ 1 ]
+  end
+
+  test "script_flush", meta do
+    client = meta[:handle]
+    script = "return \'Hello World\'"
+    [sha] = RedisCli.run( "SCRIPT LOAD \"#{script}\"" )
+    assert Client.script_flush( client ) == "OK"
+    assert RedisCli.run( "SCRIPT EXISTS #{sha}" ) == [ "0" ]
+  end
+
+  #TODO: How to test this? Open a second connection and kill the script, 
+  # and verify that the first connection is responsive?
+  # test "script_kill", meta do
+  #   client = meta[:handle]
+  # end
+
+  test "script_load", meta do
+    client = meta[:handle]
+    script = "return \'Hello World\'"
+    [sha] = RedisCli.run( "SCRIPT LOAD \"#{script}\"" )
+    assert Client.script_load( client, script ) == sha
+  end
 
 end
