@@ -939,10 +939,33 @@ defmodule RedisExClientTest do
 
   test "zinterstore", meta do
     client = meta[:handle]
+    
+    RedisCli.run( "ZADD zset1 1 a 2 b 3 c" )
+    RedisCli.run( "ZADD zset2 3 a 5 x 3 c" )
+
+    assert Client.zinterstore( client, "simple", [ "zset1", "zset2" ] ) == 2
+    assert RedisCli.run( "ZRANGE simple 0 -1 WITHSCORES" ) == [ "a", "4",
+                                                                "c", "6" ]
+
+    assert Client.zinterstore( client, "weighted", [ "zset1", "zset2" ], [ weights: [ 0.5, 2 ] ] ) == 2
+    assert RedisCli.run( "ZRANGE weighted 0 -1 WITHSCORES" ) == [ "a", "6.5",
+                                                                  "c", "7.5" ]
+
+    assert Client.zinterstore( client, "aggregated", [ "zset1", "zset2" ], [ aggregate: :min ] ) == 2
+    assert RedisCli.run( "ZRANGE aggregated 0 -1 WITHSCORES" ) == [ "a", "1",
+                                                                  "c", "3" ]
   end
 
   test "zrange", meta do
     client = meta[:handle]
+    RedisCli.run( "ZADD zset 1 a 2 b 3 c" )
+
+    assert Client.zrange( client, "zset", 0, -1 ) == [ "a", "b", "c" ]
+    assert Client.zrange( client, "zset", 1, 2 ) == [ "b", "c" ]
+
+    assert Client.zrange( client, "zset", 0, -1, [ withscores: true ] ) == [ "a", 1.0,
+                                                                             "b", 2.0,
+                                                                             "c", 3.0 ]
   end
 
   test "zrangebyscore", meta do

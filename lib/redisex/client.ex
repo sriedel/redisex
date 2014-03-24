@@ -1044,15 +1044,21 @@ defmodule RedisEx.Client do
        and length( key_list ) > 0 do
 
     opt_list = []
-    if :aggregate in opts and opts[:aggregate] in [ :sum, :min, :max ] do
-      opt_list = [ "AGGREGATE", opts[:aggregate] | opt_list ]
-    end
-    if :weights in opts do
-      weight_list = [ "WEIGHTS" | opts[:weights] ]
-      opt_list = :lists.append( weight_list, opt_list )
+
+    if is_list( opts[:weights] ) do
+      normalized_weights_list = Enum.map( opts[:weights],
+                                          fn (x) when is_binary(x) -> x
+                                            (x) when is_float(x) -> float_to_binary(x)
+                                            (x) when is_integer(x) -> integer_to_binary(x)
+                                          end )
+        opt_list = [ "WEIGHTS" | :lists.concat( [ normalized_weights_list, opt_list ] ) ]
     end
 
-    command_list = [ "ZINTERSTORE", destination, length(key_list) | key_list ]
+    if is_atom( opts[:aggregate] ) and opts[:aggregate] in [ :sum, :min, :max ] do
+      opt_list = [ "AGGREGATE", atom_to_binary( opts[:aggregate] ) | opt_list ]
+    end
+
+    command_list = [ "ZINTERSTORE", destination, integer_to_binary( length(key_list) ) | key_list ]
     command_list = :lists.append( command_list, opt_list )
     Connection.process( connection_handle.handle, command_list )
   end
@@ -1064,11 +1070,28 @@ defmodule RedisEx.Client do
        and is_integer( range_end ) do
 
     opt_list = []
-    if :withscores in opts do
+    if opts[:withscores] do
       opt_list = [ "WITHSCORES" | opt_list ]
     end
-    command_list = [ "ZRANGE", key, range_start, range_end | opt_list ]
-    Connection.process( connection_handle.handle, command_list )
+
+    command_list = [ "ZRANGE", key, integer_to_binary( range_start ), integer_to_binary( range_end ) | opt_list ]
+    result = Connection.process( connection_handle.handle, command_list )
+
+
+    if opts[:withscores] do
+      Enum.chunk( result, 2 )
+        |> Enum.map( fn( [x, "+inf"] ) -> [x, "+inf"]
+                       ( [x, "-inf"] ) -> [x, "-inf"]
+                       ( [x, y] ) -> if String.contains?( y, "." ) do
+                                     [ x, binary_to_float( y ) ]
+                                   else
+                                     [ x, binary_to_integer( y ) * 1.0 ]
+                                   end
+                     end )
+        |> List.flatten
+    else
+      result
+    end
   end
 
   def zrangebyscore( connection_handle, key, min, max, opts )
