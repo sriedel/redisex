@@ -1498,7 +1498,7 @@ defmodule RedisEx.Client do
 
   def client_getname( connection_handle )
       when is_record( connection_handle, ConnectionHandle ) do
-    command_list = [ "CLIENT GETNAME" ]
+    command_list = [ "CLIENT", "GETNAME" ]
     Connection.process( connection_handle.handle, command_list )
   end
 
@@ -1506,13 +1506,13 @@ defmodule RedisEx.Client do
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( ip )
        and is_binary( port ) do
-    command_list = [ "CLIENT KILL", "#{ip}:#{port}" ]
+    command_list = [ "CLIENT", "KILL", "#{ip}:#{port}" ]
     Connection.process( connection_handle.handle, command_list )
   end
 
   def client_list( connection_handle )
       when is_record( connection_handle, ConnectionHandle ) do
-    command_list = [ "CLIENT LIST" ]
+    command_list = [ "CLIENT", "LIST" ]
     Connection.process( connection_handle.handle, command_list )
   end
 
@@ -1520,14 +1520,14 @@ defmodule RedisEx.Client do
       when is_record( connection_handle, ConnectionHandle )
        and is_integer( timeout )
        and timeout >= 0 do
-    command_list = [ "CLIENT PAUSE", timeout ]
+    command_list = [ "CLIENT", "PAUSE", integer_to_binary( timeout ) ]
     Connection.process( connection_handle.handle, command_list )
   end
 
   def client_setname( connection_handle, name )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( name ) do
-    command_list = [ "CLIENT SETNAME", name ]
+    command_list = [ "CLIENT", "SETNAME", name ]
     Connection.process( connection_handle.handle, command_list )
   end
 

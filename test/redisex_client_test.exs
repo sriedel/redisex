@@ -1186,6 +1186,111 @@ defmodule RedisExClientTest do
     client = meta[:handle]
     assert Client.select( client, 1 ) == "OK"
   end
+  
+  test "bgrewriteaof", meta do
+    client = meta[:handle]
+    result = Client.bgrewriteaof( client ) 
+    assert result in [ "Background append only file rewriting started",
+                       "Background append only file rewriting scheduled" ]
+  end
 
+  test "bgsave", meta do
+    client = meta[:handle]
+    assert Client.bgsave( client ) == "Background saving started"
+  end
+
+  test "client_getname and client_setname", meta do
+    client = meta[:handle]
+    assert Client.client_setname( client, "myclient" ) == "OK"
+    assert Client.client_getname( client ) == "myclient"
+  end
+
+  test "client_list and client_kill", meta do
+    client = meta[:handle]
+    Client.client_setname( client, "killme" )
+    client_list = Client.client_list( client ) |> String.split( "\n" )
+    my_client_entry = Enum.find( client_list,
+                                 fn( l ) -> Regex.match?( ~r/name=killme/, l ) end )
+    [ addr | _ ] = String.split( my_client_entry )
+    ["addr", ip_port] = String.split( addr, "=" )
+   
+    [ip, port] = String.split( ip_port, ":" )
+    assert Client.client_kill( client, ip, port ) == "OK"
+  end
+
+  test "client_list", meta do
+    client = meta[:handle]
+  end
+
+  #NOTE: Only available for Redis 3.0 beta
+  # test "client pause", meta do
+  #   client = meta[:handle]
+  #   assert Client.client_pause( client, 0 ) == "OK"
+  #   assert Client.client_pause( client, 10 ) == "OK"
+  # end
+
+  test "client_setname", meta do
+    client = meta[:handle]
+  end
+
+  test "config_get", meta do
+    client = meta[:handle]
+  end
+
+  test "config_resetstat", meta do
+    client = meta[:handle]
+  end
+
+  test "config_rewrite", meta do
+    client = meta[:handle]
+  end
+
+  test "config_set", meta do
+    client = meta[:handle]
+  end
+
+  test "dbsize", meta do
+    client = meta[:handle]
+  end
+
+  test "flushall", meta do
+    client = meta[:handle]
+  end
+
+  test "flushdb", meta do
+    client = meta[:handle]
+  end
+
+  test "info", meta do
+    client = meta[:handle]
+  end
+
+  test "lastsave", meta do
+    client = meta[:handle]
+  end
+
+  test "save", meta do
+    client = meta[:handle]
+  end
+
+  test "shutdown", meta do
+    client = meta[:handle]
+  end
+
+  test "slaveof", meta do
+    client = meta[:handle]
+  end
+
+  test "slowlog", meta do
+    client = meta[:handle]
+  end
+
+  test "sync", meta do
+    client = meta[:handle]
+  end
+
+  test "time", meta do
+    client = meta[:handle]
+  end
 
 end
