@@ -811,7 +811,7 @@ defmodule RedisExClientTest do
     RedisCli.run( "SADD set2 b c" )
 
     assert Client.sdiffstore( client, "destset", [ "set1", "set2" ] ) == 1
-    RedisCli.run( "SMEMBERS destset" ) == [ "a" ]
+    assert RedisCli.run( "SMEMBERS destset" ) == [ "a" ]
   end
 
   test "sinter", meta do
@@ -829,7 +829,7 @@ defmodule RedisExClientTest do
     RedisCli.run( "SADD set2 b c" )
 
     assert Client.sinterstore( client, "destset", [ "set1", "set2" ] ) == 2
-    RedisCli.run( "SMEMBERS destset" ) == [ "c", "b" ]
+    assert RedisCli.run( "SMEMBERS destset" ) == [ "c", "b" ]
   end
 
   test "sismember", meta do
@@ -897,7 +897,7 @@ defmodule RedisExClientTest do
     RedisCli.run( "SADD set2 b c" )
 
     assert Client.sunionstore( client, "destset", [ "set1", "set2" ] ) == 4
-    RedisCli.run( "SMEMBERS destset" ) == [ "a", "b", "c", "d" ]
+    assert RedisCli.run( "SMEMBERS destset" ) == [ "c", "a", "b", "d" ]
   end
 
   # test "sscan", meta do
@@ -906,18 +906,35 @@ defmodule RedisExClientTest do
 
   test "zadd", meta do
     client = meta[:handle]
+
+    assert Client.zadd( client, "zset", [ 1, "a", 2, "b", 3.5, "c", "1e10", "d" ] ) == 4
+    assert Client.zadd( client, "zset", [ 3, "a", 5, "x" ] ) == 1
+
+    assert RedisCli.run( "ZRANGE zset 0 -1" ) == [ "b", "a", "c", "x", "d" ]
   end
 
   test "zcard", meta do
     client = meta[:handle]
+
+    RedisCli.run( "ZADD zset 1 a 2 b 3 c" )
+    assert Client.zcard( client, "i_dont_exist" ) == 0
+    assert Client.zcard( client, "zset" ) == 3
   end
 
   test "zcount", meta do
     client = meta[:handle]
+    RedisCli.run( "ZADD zset 1 a 2 b 3 c" )
+    assert Client.zcount( client, "i_dont_exist", "-inf", "+inf" ) == 0
+    assert Client.zcount( client, "zset", "-inf", "+inf" ) == 3
+    assert Client.zcount( client, "zset", 0, 3 ) == 3
+    assert Client.zcount( client, "zset", 1, 2 ) == 2
   end
 
   test "zincrby", meta do
     client = meta[:handle]
+    RedisCli.run( "ZADD zset 1 a 2 b 3 c" )
+    assert Client.zincrby( client, "zset", 4, "a" ) == 5
+    assert RedisCli.run( "ZRANGE zset 0 -1" ) == [ "b", "c", "a" ]
   end
 
   test "zinterstore", meta do

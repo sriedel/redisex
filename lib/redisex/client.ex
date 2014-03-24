@@ -963,7 +963,14 @@ defmodule RedisEx.Client do
        and is_list( score_member_list )
        and length( score_member_list ) > 0
        and rem( length( score_member_list ), 2 ) == 0 do
-    command_list = [ "ZADD", key | score_member_list ]
+
+    normalized_score_member_list = Enum.map( score_member_list, 
+                                     fn(x) when is_binary(x) -> x
+                                       (x) when is_integer(x) -> integer_to_binary( x ) 
+                                       (x) when is_float( x ) -> float_to_binary(x) 
+                                     end )
+         
+    command_list = [ "ZADD", key | normalized_score_member_list ]
     Connection.process( connection_handle.handle, command_list )
   end
 
@@ -974,6 +981,7 @@ defmodule RedisEx.Client do
     Connection.process( connection_handle.handle, command_list )
   end
 
+  #TODO: BEtter guarding of mix, max values
   def zcount( connection_handle, key, min, max ) 
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) 
@@ -982,14 +990,51 @@ defmodule RedisEx.Client do
     command_list = [ "ZCOUNT", key, min, max ]
     Connection.process( connection_handle.handle, command_list )
   end
+  def zcount( connection_handle, key, min, max ) 
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) 
+       and ( is_integer( min ) or is_float( min ) )
+       and ( is_integer( max ) or is_float( max ) ) do
+    
+    bin_min = cond do
+                is_integer(min) -> integer_to_binary(min)
+                is_float(min)   -> float_to_binary(min)
+              end
+    bin_max = cond do
+                is_integer(max) -> integer_to_binary(max)
+                is_float(max)   -> float_to_binary(max)
+              end
+    zcount( connection_handle, key, bin_min, bin_max )
+  end
 
+  #TODO: Better guard increment
   def zincrby( connection_handle, key, increment, member )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) 
        and is_binary( increment )
        and is_binary( member ) do
     command_list = [ "ZINCRBY", key, increment, member ]
-    Connection.process( connection_handle.handle, command_list )
+    case Connection.process( connection_handle.handle, command_list ) do
+      "+inf" -> "+inf"
+      "-inf" -> "-inf"
+      bin    -> if String.contains?( bin, "." ) do
+                  binary_to_float( bin ) 
+                else
+                  binary_to_integer( bin ) * 1.0
+                end
+    end
+  end
+
+  def zincrby( connection_handle, key, increment, member ) 
+      when is_record( connection_handle, ConnectionHandle )
+       and is_binary( key ) 
+       and ( is_integer( increment ) or is_float( increment ) )
+       and is_binary( member ) do
+    bin_incr = cond do
+                is_integer(increment) -> integer_to_binary(increment)
+                is_float(increment)   -> float_to_binary(increment)
+              end
+    zincrby( connection_handle, key, bin_incr, member )
   end
 
   def zinterstore( connection_handle, destination, key_list, opts \\ [] )
