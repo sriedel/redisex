@@ -1152,4 +1152,40 @@ defmodule RedisExClientTest do
     assert Client.script_load( client, script ) == sha
   end
 
+  test "auth", meta do
+    client = meta[:handle]
+    assert Client.auth( client, "foo" ) == { :redis_error, "ERR Client sent AUTH, but no password is set" }
+  end
+
+  test "echo", meta do
+    client = meta[:handle]
+    assert Client.echo( client, "foo" ) == "foo"
+  end
+
+  test "ping", meta do
+    client = meta[:handle]
+    assert Client.ping( client ) == "PONG"
+  end
+
+  test "quit", meta do
+    client = meta[:handle]
+    [ "#", "Clients", client_info | _ ] = RedisCli.run( "INFO clients" )
+    [ _, clients_count ] = String.split( client_info, ":" )
+    before_clients_count = binary_to_integer(clients_count)
+
+    assert Client.quit( client ) == "OK"
+
+    [ "#", "Clients", client_info | _ ] = RedisCli.run( "INFO clients" )
+    [ _, clients_count ] = String.split( client_info, ":" )
+    after_clients_count = binary_to_integer(clients_count)
+
+    assert after_clients_count == before_clients_count - 1
+  end
+
+  test "select", meta do
+    client = meta[:handle]
+    assert Client.select( client, 1 ) == "OK"
+  end
+
+
 end

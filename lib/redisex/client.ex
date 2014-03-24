@@ -1478,7 +1478,7 @@ defmodule RedisEx.Client do
       when is_record( connection_handle, ConnectionHandle )
        and is_integer( index )
        and index >= 0 do
-    command_list = [ "SELECT", index ]
+    command_list = [ "SELECT", integer_to_binary( index ) ]
     Connection.process( connection_handle.handle, command_list )
   end
 
