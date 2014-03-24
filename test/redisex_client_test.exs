@@ -1006,6 +1006,21 @@ defmodule RedisExClientTest do
 
   test "zunionstore", meta do
     client = meta[:handle]
+    
+    RedisCli.run( "ZADD zset1 1 a 2 b 3 c" )
+    RedisCli.run( "ZADD zset2 3 a 5 x 3 c" )
+
+    assert Client.zunionstore( client, "simple", [ "zset1", "zset2" ] ) == 2
+    assert RedisCli.run( "ZRANGE simple 0 -1 WITHSCORES" ) == [ "a", "4",
+                                                                "c", "6" ]
+
+    assert Client.zunionstore( client, "weighted", [ "zset1", "zset2" ], [ weights: [ 0.5, 2 ] ] ) == 2
+    assert RedisCli.run( "ZRANGE weighted 0 -1 WITHSCORES" ) == [ "a", "6.5",
+                                                                  "c", "7.5" ]
+
+    assert Client.zunionstore( client, "aggregated", [ "zset1", "zset2" ], [ aggregate: :min ] ) == 2
+    assert RedisCli.run( "ZRANGE aggregated 0 -1 WITHSCORES" ) == [ "a", "1",
+                                                                  "c", "3" ]
   end
 
   test "zscan", meta do
