@@ -1101,17 +1101,32 @@ defmodule RedisEx.Client do
        and is_binary( max ) do
 
     opt_list = []
-    if :limit in opts do
+    if is_list( opts[:limit] ) do
       [ offset, count ] = opts[:limit]
-      opt_list = [ "LIMIT", offset, count | opt_list ]
+      opt_list = [ "LIMIT", integer_to_binary(offset), integer_to_binary(count) | opt_list ]
     end
 
-    if :withscore in opts do
-      opt_list = [ "WITHSCORE" | opt_list ]
+    if opts[:withscores] do
+      opt_list = [ "WITHSCORES" | opt_list ]
     end
 
     command_list = [ "ZRANGEBYSCORE", key, min, max | opt_list ]
-    Connection.process( connection_handle.handle, command_list )
+    result = Connection.process( connection_handle.handle, command_list )
+
+    if opts[:withscores] do
+      Enum.chunk( result, 2 )
+        |> Enum.map( fn( [x, "+inf"] ) -> [x, "+inf"]
+                       ( [x, "-inf"] ) -> [x, "-inf"]
+                       ( [x, y] ) -> if String.contains?( y, "." ) do
+                                     [ x, binary_to_float( y ) ]
+                                   else
+                                     [ x, binary_to_integer( y ) * 1.0 ]
+                                   end
+                     end )
+        |> List.flatten
+    else
+      result
+    end
   end
 
   def zrangebyscore( connection_handle, key, min, max, opts \\ [] )
@@ -1128,7 +1143,7 @@ defmodule RedisEx.Client do
   def zrank( connection_handle, key, member )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) do
-    command_list = [ "ZRANGE", key, member ]
+    command_list = [ "ZRANK", key, member ]
     Connection.process( connection_handle.handle, command_list )
   end
 
@@ -1146,7 +1161,7 @@ defmodule RedisEx.Client do
        and is_binary( key ) 
        and is_integer( range_start ) 
        and is_integer( range_end ) do
-    command_list = [ "ZREMRANGEBYRANK", key, range_start, range_end ]
+    command_list = [ "ZREMRANGEBYRANK", key, integer_to_binary( range_start), integer_to_binary( range_end ) ]
     Connection.process( connection_handle.handle, command_list )
   end
 
@@ -1174,12 +1189,26 @@ defmodule RedisEx.Client do
        and is_integer( range_end ) do
 
     opt_list = []
-    if :withscores in opts do
+    if opts[:withscores] do
       opt_list = [ "WITHSCORES" | opt_list ] 
     end
 
-    command_list = [ "ZREVRANGE", key, range_start, range_end | opt_list ]
-    Connection.process( connection_handle.handle, command_list )
+    command_list = [ "ZREVRANGE", key, integer_to_binary(range_start), integer_to_binary(range_end) | opt_list ]
+    result = Connection.process( connection_handle.handle, command_list )
+    if opts[:withscores] do
+      Enum.chunk( result, 2 )
+        |> Enum.map( fn( [x, "+inf"] ) -> [x, "+inf"]
+                       ( [x, "-inf"] ) -> [x, "-inf"]
+                       ( [x, y] ) -> if String.contains?( y, "." ) do
+                                     [ x, binary_to_float( y ) ]
+                                   else
+                                     [ x, binary_to_integer( y ) * 1.0 ]
+                                   end
+                     end )
+        |> List.flatten
+    else
+      result
+    end
   end
 
   def zrevrangebyscore( connection_handle, key, max, min, opts ) 
@@ -1189,17 +1218,31 @@ defmodule RedisEx.Client do
        and is_binary( max ) do
 
     opt_list = []
-    if :limit in opts do
+    if is_list( opts[:limit] ) do 
       [ offset, count ] = opts[:limit]
-      opt_list = [ "LIMIT", offset, count | opt_list ]
+      opt_list = [ "LIMIT", integer_to_binary( offset ), integer_to_binary( count ) | opt_list ]
     end
 
-    if :withscore in opts do
-      opt_list = [ "WITHSCORE" | opt_list ]
+    if opts[:withscores] do
+      opt_list = [ "WITHSCORES" | opt_list ]
     end
 
     command_list = [ "ZREVRANGEBYSCORE", key, max, min | opt_list ]
-    Connection.process( connection_handle.handle, command_list )
+    result = Connection.process( connection_handle.handle, command_list )
+    if opts[:withscores] do
+      Enum.chunk( result, 2 )
+        |> Enum.map( fn( [x, "+inf"] ) -> [x, "+inf"]
+                       ( [x, "-inf"] ) -> [x, "-inf"]
+                       ( [x, y] ) -> if String.contains?( y, "." ) do
+                                     [ x, binary_to_float( y ) ]
+                                   else
+                                     [ x, binary_to_integer( y ) * 1.0 ]
+                                   end
+                     end )
+        |> List.flatten
+    else
+      result
+    end
   end
 
   def zrevrangebyscore( connection_handle, key, max, min, opts \\ [] )
@@ -1236,7 +1279,14 @@ defmodule RedisEx.Client do
        and is_binary( key )
        and is_binary( member ) do
     command_list = [ "ZSCORE", key, member ]
-    Connection.process( connection_handle.handle, command_list )
+    case Connection.process( connection_handle.handle, command_list ) do
+      nil -> nil
+      x   -> if String.contains?( x, "." ) do
+                binary_to_float( x ) 
+             else
+                binary_to_integer( x ) * 1.0
+             end
+    end
   end
 
   def zunionstore( connection_handle, destination, key_list, opts \\ [] )
@@ -1246,15 +1296,21 @@ defmodule RedisEx.Client do
        and length( key_list ) > 0 do
 
     opt_list = []
-    if :aggregate in opts and opts[:aggregate] in [ :sum, :min, :max ] do
-      opt_list = [ "AGGREGATE", opts[:aggregate] | opt_list ]
-    end
-    if :weights in opts do
-      weight_list = [ "WEIGHTS" | opts[:weights] ]
-      opt_list = :lists.append( weight_list, opt_list )
+
+    if is_list( opts[:weights] ) do
+      normalized_weights_list = Enum.map( opts[:weights],
+                                          fn (x) when is_binary(x) -> x
+                                            (x) when is_float(x) -> float_to_binary(x)
+                                            (x) when is_integer(x) -> integer_to_binary(x)
+                                          end )
+        opt_list = [ "WEIGHTS" | :lists.concat( [ normalized_weights_list, opt_list ] ) ]
     end
 
-    command_list = [ "ZUNIONSTORE", destination, length( key_list ) | key_list ]
+    if is_atom( opts[:aggregate] ) and opts[:aggregate] in [ :sum, :min, :max ] do
+      opt_list = [ "AGGREGATE", atom_to_binary( opts[:aggregate] ) | opt_list ]
+    end
+
+    command_list = [ "ZUNIONSTORE", destination, integer_to_binary( length(key_list) ) | key_list ]
     command_list = :lists.append( command_list, opt_list )
     Connection.process( connection_handle.handle, command_list )
   end

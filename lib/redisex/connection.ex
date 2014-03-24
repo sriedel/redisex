@@ -101,6 +101,7 @@ defmodule RedisEx.Connection do
                         ZRANGE
                         ZRANGEBYSCORE
                         ZRANGE
+                        ZRANK
                         ZREM
                         ZREMRANGEBYRANK
                         ZREMRANGEBYSCORE

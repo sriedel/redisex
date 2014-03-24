@@ -970,38 +970,113 @@ defmodule RedisExClientTest do
 
   test "zrangebyscore", meta do
     client = meta[:handle]
+    RedisCli.run( "ZADD zset 1 a 2 b 3 c" )
+
+    assert Client.zrangebyscore( client, "zset", "-inf", "+inf" ) == [ "a", "b", "c" ]
+    assert Client.zrangebyscore( client, "zset", 0.0, 10.0 ) == [ "a", "b", "c" ]
+    assert Client.zrangebyscore( client, "zset", 1.5, 3.0 ) == [ "b", "c" ]
+    assert Client.zrangebyscore( client, "zset", "(1", "(3" ) == [ "b" ]
+
+    assert Client.zrangebyscore( client, "zset", 1.5, 3.0, [ withscores: true ] ) == [ "b", 2.0,
+          "c", 3.0 ]
+    assert Client.zrangebyscore( client, "zset", 0.0, 10.0, [ limit: [ 1, 2 ] ] ) == [ "b", "c" ]
   end
 
   test "zrank", meta do
     client = meta[:handle]
+    RedisCli.run( "ZADD zset 1 a 2 b 3 c" )
+
+    assert Client.zrank( client, "i_dont_exist", "a" ) == nil
+    assert Client.zrank( client, "zset", "a" ) == 0
+    assert Client.zrank( client, "zset", "b" ) == 1
+    assert Client.zrank( client, "zset", "c" ) == 2
+    assert Client.zrank( client, "zset", "d" ) == nil
   end
 
   test "zrem", meta do
     client = meta[:handle]
+    RedisCli.run( "ZADD zset 1 a 2 b 3 c" )
+
+    assert Client.zrem( client, "zset", [ "a", "c" ] ) == 2
+    assert RedisCli.run( "ZRANGE zset 0 -1" ) == [ "b" ]
+    assert Client.zrem( client, "zset", [ "b", "z" ] ) == 1
+    assert RedisCli.run( "ZRANGE zset 0 -1" ) ==  []
   end
 
   test "zremrangebyrank", meta do
     client = meta[:handle]
+    RedisCli.run( "ZADD zset 1 a 2 b 3 c" )
+
+    assert Client.zremrangebyrank( client, "zset", 2, -1 ) == 1
+    assert RedisCli.run( "ZRANGE zset 0 -1" ) == [ "a", "b" ]
+    assert Client.zremrangebyrank( client, "zset", 0, 1 ) == 2
+    assert RedisCli.run( "ZRANGE zset 0 -1" ) == []
   end
 
   test "zremrangebyscore", meta do
     client = meta[:handle]
+    RedisCli.run( "ZADD zset 1 a 2 b 3 c" )
+
+    assert Client.zremrangebyscore( client, "zset", "-inf", "+inf" ) == 3
+    assert RedisCli.run( "ZRANGE zset 0 -1" ) == []
+
+    RedisCli.run( "ZADD zset 1 a 2 b 3 c" )
+    assert Client.zremrangebyscore( client, "zset", 0.0, 10.0 ) == 3
+    assert RedisCli.run( "ZRANGE zset 0 -1" ) == []
+
+    RedisCli.run( "ZADD zset 1 a 2 b 3 c" )
+    assert Client.zremrangebyscore( client, "zset", 1.5, 3.0 ) == 2
+    assert RedisCli.run( "ZRANGE zset 0 -1" ) == [ "a" ]
+
+    RedisCli.run( "ZADD zset 1 a 2 b 3 c" )
+    assert Client.zremrangebyscore( client, "zset", "(1", "(3" ) == 1
+    assert RedisCli.run( "ZRANGE zset 0 -1" ) == [ "a", "c" ]
   end
 
   test "zrevrange", meta do
     client = meta[:handle]
+    RedisCli.run( "ZADD zset 1 a 2 b 3 c" )
+
+    assert Client.zrevrange( client, "zset", 0, -1 ) == [ "c", "b", "a" ]
+    assert Client.zrevrange( client, "zset", 1, 2 ) == [ "b", "a" ]
+
+    assert Client.zrevrange( client, "zset", 0, -1, [ withscores: true ] ) == [ "c", 3.0,
+                                                                             "b", 2.0,
+                                                                             "a", 1.0 ]
   end
 
   test "zrevrangebyscore", meta do
     client = meta[:handle]
+    RedisCli.run( "ZADD zset 1 a 2 b 3 c" )
+
+    assert Client.zrevrangebyscore( client, "zset", "+inf", "-inf" ) == [ "c", "b", "a" ]
+    assert Client.zrevrangebyscore( client, "zset", 0.0, 10.0 ) == [ "c", "b", "a" ]
+    assert Client.zrevrangebyscore( client, "zset", 1.5, 3.0 ) == [ "c", "b" ]
+    assert Client.zrevrangebyscore( client, "zset", "(3", "(1" ) == [ "b" ]
+
+    assert Client.zrevrangebyscore( client, "zset", 1.5, 3.0, [ withscores: true ] ) == [ "c", 3.0,
+             "b", 2.0 ]
+    assert Client.zrevrangebyscore( client, "zset", 0.0, 10.0, [ limit: [ 1, 2 ] ] ) == [ "b", "a" ]
   end
 
   test "zrevrank", meta do
     client = meta[:handle]
+    RedisCli.run( "ZADD zset 1 a 2 b 3 c" )
+
+    assert Client.zrevrank( client, "i_dont_exist", "a" ) == nil
+    assert Client.zrevrank( client, "zset", "a" ) == 2
+    assert Client.zrevrank( client, "zset", "b" ) == 1
+    assert Client.zrevrank( client, "zset", "c" ) == 0
+    assert Client.zrevrank( client, "zset", "d" ) == nil
   end
 
   test "zscore", meta do
     client = meta[:handle]
+    RedisCli.run( "ZADD zset 1 a 2 b 3 c" )
+
+    assert Client.zscore( client, "zset", "a" ) == 1.0
+    assert Client.zscore( client, "zset", "d" ) == nil
+    assert Client.zscore( client, "i_dont_exist", "x" ) == nil
   end
 
   test "zunionstore", meta do
@@ -1010,17 +1085,23 @@ defmodule RedisExClientTest do
     RedisCli.run( "ZADD zset1 1 a 2 b 3 c" )
     RedisCli.run( "ZADD zset2 3 a 5 x 3 c" )
 
-    assert Client.zunionstore( client, "simple", [ "zset1", "zset2" ] ) == 2
-    assert RedisCli.run( "ZRANGE simple 0 -1 WITHSCORES" ) == [ "a", "4",
+    assert Client.zunionstore( client, "simple", [ "zset1", "zset2" ] ) == 4
+    assert RedisCli.run( "ZRANGE simple 0 -1 WITHSCORES" ) == [ "b", "2",
+                                                                "a", "4",
+                                                                "x", "5",
                                                                 "c", "6" ]
 
-    assert Client.zunionstore( client, "weighted", [ "zset1", "zset2" ], [ weights: [ 0.5, 2 ] ] ) == 2
-    assert RedisCli.run( "ZRANGE weighted 0 -1 WITHSCORES" ) == [ "a", "6.5",
-                                                                  "c", "7.5" ]
+    assert Client.zunionstore( client, "weighted", [ "zset1", "zset2" ], [ weights: [ 0.5, 2 ] ] ) == 4
+    assert RedisCli.run( "ZRANGE weighted 0 -1 WITHSCORES" ) == [ "b", "1",
+                                                                  "a", "6.5",
+                                                                  "c", "7.5",
+                                                                  "x", "10" ]
 
-    assert Client.zunionstore( client, "aggregated", [ "zset1", "zset2" ], [ aggregate: :min ] ) == 2
+    assert Client.zunionstore( client, "aggregated", [ "zset1", "zset2" ], [ aggregate: :min ] ) == 4
     assert RedisCli.run( "ZRANGE aggregated 0 -1 WITHSCORES" ) == [ "a", "1",
-                                                                  "c", "3" ]
+                                                                    "b", "2",
+                                                                    "c", "3",
+                                                                    "x", "5" ]
   end
 
   test "zscan", meta do
