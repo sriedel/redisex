@@ -1534,19 +1534,19 @@ defmodule RedisEx.Client do
   def config_get( connection_handle, parameter )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( parameter ) do
-    command_list = [ "CONFIG GET", parameter ]
+    command_list = [ "CONFIG", "GET", parameter ]
     Connection.process( connection_handle.handle, command_list )
   end
 
   def config_resetstat( connection_handle )
       when is_record( connection_handle, ConnectionHandle ) do
-    command_list = [ "CONFIG RESETSTAT" ]
+    command_list = [ "CONFIG", "RESETSTAT" ]
     Connection.process( connection_handle.handle, command_list )
   end
 
   def config_rewrite( connection_handle )
       when is_record( connection_handle, ConnectionHandle ) do
-    command_list = [ "CONFIG REWRITE" ]
+    command_list = [ "CONFIG", "REWRITE" ]
     Connection.process( connection_handle.handle, command_list )
   end
 
@@ -1554,7 +1554,7 @@ defmodule RedisEx.Client do
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( parameter )
        and ( is_binary( value ) or is_integer( value ) ) do
-    command_list = [ "CONFIG SET", parameter, value ]
+    command_list = [ "CONFIG", "SET", parameter, value ]
     Connection.process( connection_handle.handle, command_list )
   end
 
@@ -1579,7 +1579,7 @@ defmodule RedisEx.Client do
   def info( connection_handle, section \\ :default )
       when is_record( connection_handle, ConnectionHandle )
        and section in [ :server, :clients, :memory, :persistence, :stats, :replication, :cpu, :commandstats, :cluster, :keyspace, :all, :default ] do
-    command_list = [ "INFO", section ]
+    command_list = [ "INFO", atom_to_binary( section ) ]
     Connection.process( connection_handle.handle, command_list )
   end
 
@@ -1601,15 +1601,10 @@ defmodule RedisEx.Client do
     Connection.process( connection_handle.handle, command_list )
   end
 
-  def shutdown( connection_handle, :save )
-      when is_record( connection_handle, ConnectionHandle ) do
-    command_list = [ "SHUTDOWN SAVE" ]
-    Connection.process( connection_handle.handle, command_list )
-  end
-
-  def shutdown( connection_handle, :nosave )
-      when is_record( connection_handle, ConnectionHandle ) do
-    command_list = [ "SHUTDOWN NOSAVE" ]
+  def shutdown( connection_handle, arg )
+      when is_record( connection_handle, ConnectionHandle )
+       and arg in [ :save, :nosave ] do
+    command_list = [ "SHUTDOWN", atom_to_binary( arg ) ]
     Connection.process( connection_handle.handle, command_list )
   end
 
@@ -1627,6 +1622,31 @@ defmodule RedisEx.Client do
     Connection.process( connection_handle.handle, command_list )
   end
 
+  def slowlog( connection_handle, :len )
+      when is_record( connection_handle, ConnectionHandle ) do
+    command_list = [ "SLOWLOG", "LEN" ]
+    Connection.process( connection_handle.handle, command_list )
+  end
+
+  def slowlog( connection_handle, :get )
+      when is_record( connection_handle, ConnectionHandle ) do
+    command_list = [ "SLOWLOG", "GET" ]
+    Connection.process( connection_handle.handle, command_list )
+  end
+
+  def slowlog( connection_handle, :get, pos )
+      when is_record( connection_handle, ConnectionHandle ) 
+       and is_integer( pos ) do
+    command_list = [ "SLOWLOG", "GET", integer_to_binary( pos ) ]
+    Connection.process( connection_handle.handle, command_list )
+  end
+
+  def slowlog( connection_handle, :reset )
+      when is_record( connection_handle, ConnectionHandle ) do
+    command_list = [ "SLOWLOG", "RESET" ]
+    Connection.process( connection_handle.handle, command_list )
+  end
+
   def slowlog( connection_handle, subcommand, arguments \\ [] )
       when is_record( connection_handle, ConnectionHandle )
        and subcommand in [ :get, :len, :reset ] 
@@ -1635,16 +1655,11 @@ defmodule RedisEx.Client do
     Connection.process( connection_handle.handle, command_list )
   end
 
-  def sync( connection_handle )
-      when is_record( connection_handle, ConnectionHandle ) do
-    command_list = [ "SYNC" ]
-    Connection.process( connection_handle.handle, command_list )
-  end
-
   def time( connection_handle )
       when is_record( connection_handle, ConnectionHandle ) do
     command_list = [ "TIME" ]
-    Connection.process( connection_handle.handle, command_list )
+    [ seconds, micros ] = Connection.process( connection_handle.handle, command_list )
+    [ binary_to_integer( seconds ), binary_to_integer( micros ) ]
   end
 
   defp number_to_binary( number ) when is_integer( number ), do: integer_to_binary( number )

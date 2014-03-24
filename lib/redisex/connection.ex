@@ -137,7 +137,6 @@ defmodule RedisEx.Connection do
                         SHUTDOWN
                         SLAVEOF
                         SLOWLOG
-                        SYNC
                         TIME
                       ]
  
