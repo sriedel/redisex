@@ -1546,11 +1546,13 @@ defmodule RedisEx.Client do
     |> process( connection_handle.handle )
   end
 
-  def slowlog( connection_handle, :get, pos )
+  def slowlog( connection_handle, :get, limit )
       when is_record( connection_handle, ConnectionHandle ) 
-       and is_integer( pos ) do
-    [ "SLOWLOG", "GET", integer_to_binary( pos ) ]
+       and is_integer( limit ) do
+    [ "SLOWLOG", "GET", integer_to_binary( limit ) ]
     |> process( connection_handle.handle )
+    |> Enum.map( fn( [a, b, c, d] ) -> [ id: a, start_time: b, runtime: c, command: d ] end )
+
   end
 
   def slowlog( connection_handle, :reset )

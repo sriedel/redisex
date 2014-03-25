@@ -1315,14 +1315,20 @@ defmodule RedisExClientTest do
     assert Client.slaveof( client, :noone ) == "OK"
   end
 
-  #FIXME: Decoding seems to have a problem with nested arrays!
   test "slowlog", meta do
     client = meta[:handle]
-    result = Client.slowlog( client, :len )
-    assert is_integer( result )
+    RedisCli.run( "SLOWLOG RESET" )
+    RedisCli.run( "EVAL 'for var=1,1000000 do end' 0" )
+    Client.script_kill( client ) 
 
-    assert is_list( Client.slowlog( client, :get, 1 ) )
+    assert Client.slowlog( client, :len ) == 1
+    [[id: id, start_time: start, runtime: run, command: cmd]] = Client.slowlog( client, :get, 1 )
+    assert is_integer( id )
+    assert is_integer( start )
+    assert is_integer( run )
+    assert is_list( cmd )
     assert Client.slowlog( client, :reset ) == "OK"
+    assert Client.slowlog( client, :len ) == 0 
   end
 
   test "time", meta do
