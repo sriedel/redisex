@@ -407,13 +407,9 @@ defmodule RedisEx.Client do
       when is_record( connection_handle, ConnectionHandle ) 
        and is_binary( key )
        and is_binary( increment ) do
-    result = [ "INCRBYFLOAT", key, increment ] 
-             |> process( connection_handle.handle )
-
-    case result do
-      { :redis_error, error_message } -> { :redis_error, error_message }
-      float_as_binary -> binary_to_number( float_as_binary )
-    end
+    [ "INCRBYFLOAT", key, increment ] 
+    |> process( connection_handle.handle )
+    |> binary_to_number
   end
   def incrbyfloat( connection_handle, key, increment ) 
       when is_record( connection_handle, ConnectionHandle ) 
@@ -561,12 +557,9 @@ defmodule RedisEx.Client do
        and is_binary( key )
        and is_binary( field ) 
        and is_binary( increment ) do
-    result = [ "HINCRBYFLOAT", key, field, increment ]
-             |> process( connection_handle.handle )
-    case result do
-      { :redis_error, error_message } -> { :redis_error, error_message }
-      float_as_binary -> binary_to_number( float_as_binary )
-    end
+    [ "HINCRBYFLOAT", key, field, increment ]
+    |> process( connection_handle.handle )
+    |> binary_to_number
   end
 
   def hincrbyfloat( connection_handle, key, field, increment )
@@ -999,13 +992,9 @@ defmodule RedisEx.Client do
        and is_binary( key ) 
        and is_binary( increment )
        and is_binary( member ) do
-    result = [ "ZINCRBY", key, increment, member ]
-            |> process( connection_handle.handle )
-    case result do
-      "+inf" -> "+inf"
-      "-inf" -> "-inf"
-      bin    -> binary_to_number( bin )
-    end
+     [ "ZINCRBY", key, increment, member ]
+    |> process( connection_handle.handle )
+    |> binary_to_score
   end
 
   def zincrby( connection_handle, key, increment, member ) 
@@ -1058,11 +1047,8 @@ defmodule RedisEx.Client do
 
     if opts[:withscores] do
       Enum.chunk( result, 2 )
-        |> Enum.map( fn( [x, "+inf"] ) -> [x, "+inf"]
-                       ( [x, "-inf"] ) -> [x, "-inf"]
-                       ( [x, y] ) -> [ x, binary_to_number( y ) ]
-                     end )
-        |> List.flatten
+      |> Enum.map( fn ( [x, y] ) -> [ x, binary_to_score( y ) ] end )
+      |> List.flatten
     else
       result
     end
@@ -1089,11 +1075,8 @@ defmodule RedisEx.Client do
 
     if opts[:withscores] do
       Enum.chunk( result, 2 )
-        |> Enum.map( fn( [x, "+inf"] ) -> [x, "+inf"]
-                       ( [x, "-inf"] ) -> [x, "-inf"]
-                       ( [x, y] )      -> [ x, binary_to_number( y ) ]
-                     end )
-        |> List.flatten
+      |> Enum.map( fn( [x, y] ) -> [ x, binary_to_score( y ) ] end )
+      |> List.flatten
     else
       result
     end
@@ -1167,11 +1150,8 @@ defmodule RedisEx.Client do
              |> process( connection_handle.handle )
     if opts[:withscores] do
       Enum.chunk( result, 2 )
-        |> Enum.map( fn( [x, "+inf"] ) -> [x, "+inf"]
-                       ( [x, "-inf"] ) -> [x, "-inf"]
-                       ( [x, y] )      -> [ x, binary_to_number( y ) ]
-                     end )
-        |> List.flatten
+      |> Enum.map( fn ( [x, y] ) -> [ x, binary_to_score( y ) ] end )
+      |> List.flatten
     else
       result
     end
@@ -1197,11 +1177,8 @@ defmodule RedisEx.Client do
              |> process( connection_handle.handle )
     if opts[:withscores] do
       Enum.chunk( result, 2 )
-        |> Enum.map( fn( [x, "+inf"] ) -> [x, "+inf"]
-                       ( [x, "-inf"] ) -> [x, "-inf"]
-                       ( [x, y] ) -> [ x, binary_to_number( y ) ]
-                     end )
-        |> List.flatten
+      |> Enum.map( fn ( [x, y] ) -> [ x, binary_to_score( y ) ] end )
+      |> List.flatten
     else
       result
     end
@@ -1534,9 +1511,10 @@ defmodule RedisEx.Client do
     |> process( connection_handle.handle )
   end
 
+  @infosections [ :server, :clients, :memory, :persistence, :stats, :replication, :cpu, :commandstats, :cluster, :keyspace, :all, :default ] 
   def info( connection_handle, section \\ :default )
       when is_record( connection_handle, ConnectionHandle )
-       and section in [ :server, :clients, :memory, :persistence, :stats, :replication, :cpu, :commandstats, :cluster, :keyspace, :all, :default ] do
+       and section in @infosections do
     [ "INFO", atom_to_binary( section ) ]
     |> process( connection_handle.handle )
   end
@@ -1623,6 +1601,11 @@ defmodule RedisEx.Client do
   defp number_to_binary( number ) when is_integer( number ), do: integer_to_binary( number )
   defp number_to_binary( number ) when is_float( number ), do: float_to_binary( number )
 
+  defp binary_to_score( "+inf" ), do: "+inf"
+  defp binary_to_score( "-inf" ), do: "-inf"
+  defp binary_to_score( score ), do: binary_to_number( score )
+
+
   defp binary_to_number( string ) when is_binary( string ) do
     if String.contains?( string, "." ) do
       binary_to_float( string )
@@ -1630,6 +1613,7 @@ defmodule RedisEx.Client do
       binary_to_integer( string ) * 1.0
     end
   end
+  defp binary_to_number( value ), do: value
 
   defp integer_result_to_boolean( 1 ), do: true
   defp integer_result_to_boolean( 0 ), do: false
