@@ -47,8 +47,8 @@ defmodule RedisEx.Client do
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) do
     command_list = [ "EXISTS", key ]
-    result = Connection.process( connection_handle.handle, command_list )
-    result == 1
+    Connection.process( connection_handle.handle, command_list )
+      |> integer_result_to_boolean
   end
 
   def expire( connection_handle, key, seconds )
@@ -57,15 +57,15 @@ defmodule RedisEx.Client do
        and is_integer( seconds ) 
        and seconds >= 0 do
     command_list = [ "EXPIRE", key, integer_to_binary( seconds ) ]
-    result = Connection.process( connection_handle.handle, command_list )
-    result == 1
+    Connection.process( connection_handle.handle, command_list ) 
+      |> integer_result_to_boolean
   end
 
   def expireat( connection_handle, key, timestamp )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) 
        and is_integer( timestamp ) do
-    command_list = [ "EXPIREAT", key, timestamp ]
+    command_list = [ "EXPIREAT", key, integer_to_binary( timestamp ) ]
     Connection.process( connection_handle.handle, command_list )
   end
 
@@ -87,14 +87,10 @@ defmodule RedisEx.Client do
        and timeout >= 0 do
 
     opt_list = []
-    if :replace in opts do
-      opt_list = [ "REPLACE" | opt_list ]
-    end
-    if :copy in opts do
-      opt_list = [ "COPY" | opt_list ]
-    end
+    if opts[:replace], do: opt_list = [ "REPLACE" | opt_list ]
+    if opts[:copy], do: opt_list = [ "COPY" | opt_list ]
 
-    command_list = [ "MIGRATE", host, port, key, db, timeout | opt_list ]
+    command_list = [ "MIGRATE", host, port, key, integer_to_binary(db), integer_to_binary(timeout) | opt_list ]
     Connection.process( connection_handle.handle, command_list )
   end
 
@@ -119,8 +115,8 @@ defmodule RedisEx.Client do
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) do
     command_list = [ "PERSIST", key ]
-    result = Connection.process( connection_handle.handle, command_list )
-    result == 1
+    Connection.process( connection_handle.handle, command_list )
+      |> integer_result_to_boolean
   end
 
   def pexpire( connection_handle, key, milliseconds )
@@ -129,8 +125,8 @@ defmodule RedisEx.Client do
        and is_integer( milliseconds ) 
        and milliseconds > 0 do
     command_list = [ "PEXPIRE", key, integer_to_binary( milliseconds ) ]
-    result = Connection.process( connection_handle.handle, command_list )
-    result == 1
+    Connection.process( connection_handle.handle, command_list )
+      |> integer_result_to_boolean
   end
 
   def pexpireat( connection_handle, key, millisecond_timestamp )
@@ -138,7 +134,7 @@ defmodule RedisEx.Client do
        and is_binary( key ) 
        and is_integer( millisecond_timestamp ) 
        and millisecond_timestamp > 0 do
-    command_list = [ "PEXPIREAT", key, millisecond_timestamp ]
+    command_list = [ "PEXPIREAT", key, integer_to_binary( millisecond_timestamp ) ]
     Connection.process( connection_handle.handle, command_list )
   end
 
@@ -149,7 +145,7 @@ defmodule RedisEx.Client do
     case Connection.process( connection_handle.handle, command_list ) do
       -2 -> nil
       -1 -> :no_ttl
-      x when is_integer( x ) and x >= 0 -> x
+      x  -> x
     end
   end
 
@@ -245,7 +241,7 @@ defmodule RedisEx.Client do
     case Connection.process( connection_handle.handle, command_list ) do
       -2 -> nil
       -1 -> :no_ttl
-      x when is_integer( x ) and x >= 0 -> x
+      x  -> x
     end
   end
 
@@ -255,11 +251,11 @@ defmodule RedisEx.Client do
     command_list = [ "TYPE", key ]
     case Connection.process( connection_handle.handle, command_list ) do
       "string" -> :string
-      "list" -> :list
-      "hash" -> :hash
-      "set" -> :set
-      "zset" -> :zset
-      _ -> :none
+      "list"   -> :list
+      "hash"   -> :hash
+      "set"    -> :set
+      "zset"   -> :zset
+      _        -> :none
     end
   end
 
@@ -404,11 +400,7 @@ defmodule RedisEx.Client do
     result = Connection.process( connection_handle.handle, command_list )
     case result do
       { :redis_error, error_message } -> { :redis_error, error_message }
-      float_as_binary -> if String.contains?( float_as_binary, "." ) do
-                           binary_to_float( float_as_binary )
-                         else
-                           binary_to_integer( float_as_binary ) * 1.0
-                         end
+      float_as_binary -> binary_to_number( float_as_binary )
     end
   end
   def incrbyfloat( connection_handle, key, increment ) 
@@ -441,11 +433,8 @@ defmodule RedisEx.Client do
        and length( key_value_list ) > 0
        and rem( length( key_value_list ), 2 ) == 0 do
     command_list = [ "MSETNX" | key_value_list ]
-    case Connection.process( connection_handle.handle, command_list ) do
-      1 -> true
-      0 -> false
-    end
-
+    Connection.process( connection_handle.handle, command_list )
+      |> integer_result_to_boolean
   end
 
   def psetex( connection_handle, key, milliseconds, value ) 
@@ -491,10 +480,8 @@ defmodule RedisEx.Client do
        and is_binary( key )
        and is_binary( value ) do
     command_list = [ "SETNX", key, value ]
-    case Connection.process( connection_handle.handle, command_list ) do
-      1 -> true
-      0 -> false
-    end
+    Connection.process( connection_handle.handle, command_list )
+      |> integer_result_to_boolean
   end
 
   def setrange( connection_handle, key, offset, value ) 
@@ -529,10 +516,8 @@ defmodule RedisEx.Client do
        and is_binary( key )
        and is_binary( field ) do
     command_list = [ "HEXISTS", key, field ]
-    case Connection.process( connection_handle.handle, command_list ) do
-      1 -> true
-      0 -> false
-    end
+    Connection.process( connection_handle.handle, command_list )
+      |> integer_result_to_boolean
   end
 
   def hget( connection_handle, key, field )
@@ -567,11 +552,7 @@ defmodule RedisEx.Client do
     command_list = [ "HINCRBYFLOAT", key, field, increment ]
     case Connection.process( connection_handle.handle, command_list ) do
       { :redis_error, error_message } -> { :redis_error, error_message }
-      float_as_binary -> if String.contains?( float_as_binary, "." ) do
-                           binary_to_float( float_as_binary )
-                         else
-                           binary_to_integer( float_as_binary ) * 1.0
-                         end
+      float_as_binary -> binary_to_number( float_as_binary )
     end
   end
 
@@ -647,11 +628,8 @@ defmodule RedisEx.Client do
        and is_binary( field ) 
        and is_binary( value ) do
     command_list = [ "HSETNX", key, field, value ]
-    case Connection.process( connection_handle.handle, command_list ) do
-      1 -> true
-      0 -> false
-      other -> other
-    end
+    Connection.process( connection_handle.handle, command_list )
+      |> integer_result_to_boolean
   end
 
   def hvals( connection_handle, key )
@@ -868,11 +846,8 @@ defmodule RedisEx.Client do
        and is_binary( key ) 
        and is_binary( member ) do
     command_list = [ "SISMEMBER", key, member ]
-    case Connection.process( connection_handle.handle, command_list ) do
-      1 -> true
-      0 -> false
-      other -> other
-    end
+    Connection.process( connection_handle.handle, command_list )
+      |> integer_result_to_boolean
   end
 
   def smembers( connection_handle, key )
@@ -888,11 +863,8 @@ defmodule RedisEx.Client do
        and is_binary( destination_key ) 
        and is_binary( member ) do
     command_list = [ "SMOVE", source_key, destination_key, member ]
-    case Connection.process( connection_handle.handle, command_list ) do
-      1 -> true
-      0 -> false
-      other -> other
-    end
+    Connection.process( connection_handle.handle, command_list )
+      |> integer_result_to_boolean
   end
 
   def spop( connection_handle, key )
@@ -1017,11 +989,7 @@ defmodule RedisEx.Client do
     case Connection.process( connection_handle.handle, command_list ) do
       "+inf" -> "+inf"
       "-inf" -> "-inf"
-      bin    -> if String.contains?( bin, "." ) do
-                  binary_to_float( bin ) 
-                else
-                  binary_to_integer( bin ) * 1.0
-                end
+      bin    -> binary_to_number( bin )
     end
   end
 
@@ -1030,11 +998,7 @@ defmodule RedisEx.Client do
        and is_binary( key ) 
        and ( is_integer( increment ) or is_float( increment ) )
        and is_binary( member ) do
-    bin_incr = cond do
-                is_integer(increment) -> integer_to_binary(increment)
-                is_float(increment)   -> float_to_binary(increment)
-              end
-    zincrby( connection_handle, key, bin_incr, member )
+    zincrby( connection_handle, key, number_to_binary( increment ), member )
   end
 
   def zinterstore( connection_handle, destination, key_list, opts \\ [] )
@@ -1048,8 +1012,7 @@ defmodule RedisEx.Client do
     if is_list( opts[:weights] ) do
       normalized_weights_list = Enum.map( opts[:weights],
                                           fn (x) when is_binary(x) -> x
-                                            (x) when is_float(x) -> float_to_binary(x)
-                                            (x) when is_integer(x) -> integer_to_binary(x)
+                                             (x) when is_number(x) -> number_to_binary(x)
                                           end )
         opt_list = [ "WEIGHTS" | :lists.concat( [ normalized_weights_list, opt_list ] ) ]
     end
@@ -1082,11 +1045,7 @@ defmodule RedisEx.Client do
       Enum.chunk( result, 2 )
         |> Enum.map( fn( [x, "+inf"] ) -> [x, "+inf"]
                        ( [x, "-inf"] ) -> [x, "-inf"]
-                       ( [x, y] ) -> if String.contains?( y, "." ) do
-                                     [ x, binary_to_float( y ) ]
-                                   else
-                                     [ x, binary_to_integer( y ) * 1.0 ]
-                                   end
+                       ( [x, y] ) -> [ x, binary_to_number( y ) ]
                      end )
         |> List.flatten
     else
@@ -1117,11 +1076,7 @@ defmodule RedisEx.Client do
       Enum.chunk( result, 2 )
         |> Enum.map( fn( [x, "+inf"] ) -> [x, "+inf"]
                        ( [x, "-inf"] ) -> [x, "-inf"]
-                       ( [x, y] ) -> if String.contains?( y, "." ) do
-                                     [ x, binary_to_float( y ) ]
-                                   else
-                                     [ x, binary_to_integer( y ) * 1.0 ]
-                                   end
+                       ( [x, y] )      -> [ x, binary_to_number( y ) ]
                      end )
         |> List.flatten
     else
@@ -1199,11 +1154,7 @@ defmodule RedisEx.Client do
       Enum.chunk( result, 2 )
         |> Enum.map( fn( [x, "+inf"] ) -> [x, "+inf"]
                        ( [x, "-inf"] ) -> [x, "-inf"]
-                       ( [x, y] ) -> if String.contains?( y, "." ) do
-                                     [ x, binary_to_float( y ) ]
-                                   else
-                                     [ x, binary_to_integer( y ) * 1.0 ]
-                                   end
+                       ( [x, y] )      -> [ x, binary_to_number( y ) ]
                      end )
         |> List.flatten
     else
@@ -1233,11 +1184,7 @@ defmodule RedisEx.Client do
       Enum.chunk( result, 2 )
         |> Enum.map( fn( [x, "+inf"] ) -> [x, "+inf"]
                        ( [x, "-inf"] ) -> [x, "-inf"]
-                       ( [x, y] ) -> if String.contains?( y, "." ) do
-                                     [ x, binary_to_float( y ) ]
-                                   else
-                                     [ x, binary_to_integer( y ) * 1.0 ]
-                                   end
+                       ( [x, y] ) -> [ x, binary_to_number( y ) ]
                      end )
         |> List.flatten
     else
@@ -1281,11 +1228,7 @@ defmodule RedisEx.Client do
     command_list = [ "ZSCORE", key, member ]
     case Connection.process( connection_handle.handle, command_list ) do
       nil -> nil
-      x   -> if String.contains?( x, "." ) do
-                binary_to_float( x ) 
-             else
-                binary_to_integer( x ) * 1.0
-             end
+      x   -> binary_to_number( x )
     end
   end
 
@@ -1300,8 +1243,7 @@ defmodule RedisEx.Client do
     if is_list( opts[:weights] ) do
       normalized_weights_list = Enum.map( opts[:weights],
                                           fn (x) when is_binary(x) -> x
-                                            (x) when is_float(x) -> float_to_binary(x)
-                                            (x) when is_integer(x) -> integer_to_binary(x)
+                                             (x) when is_number(x) -> number_to_binary(x)
                                           end )
         opt_list = [ "WEIGHTS" | :lists.concat( [ normalized_weights_list, opt_list ] ) ]
     end
@@ -1664,4 +1606,17 @@ defmodule RedisEx.Client do
 
   defp number_to_binary( number ) when is_integer( number ), do: integer_to_binary( number )
   defp number_to_binary( number ) when is_float( number ), do: float_to_binary( number )
+
+  defp binary_to_number( string ) when is_binary( string ) do
+    if String.contains?( string, "." ) do
+      binary_to_float( string )
+    else
+      binary_to_integer( string ) * 1.0
+    end
+  end
+
+  defp integer_result_to_boolean( 1 ), do: true
+  defp integer_result_to_boolean( 0 ), do: false
+  defp integer_result_to_boolean( x ), do: x
+
 end
