@@ -944,10 +944,7 @@ defmodule RedisEx.Client do
        and rem( length( score_member_list ), 2 ) == 0 do
 
     normalized_score_member_list = Enum.map( score_member_list, 
-                                     fn(x) when is_binary(x) -> x
-                                       (x) when is_integer(x) -> integer_to_binary( x ) 
-                                       (x) when is_float( x ) -> float_to_binary(x) 
-                                     end )
+                                             fn(x) -> number_to_binary( x ) end )
          
     [ "ZADD", key | normalized_score_member_list ]
     |> process( connection_handle.handle )
@@ -975,14 +972,8 @@ defmodule RedisEx.Client do
        and ( is_integer( min ) or is_float( min ) )
        and ( is_integer( max ) or is_float( max ) ) do
     
-    bin_min = cond do
-                is_integer(min) -> integer_to_binary(min)
-                is_float(min)   -> float_to_binary(min)
-              end
-    bin_max = cond do
-                is_integer(max) -> integer_to_binary(max)
-                is_float(max)   -> float_to_binary(max)
-              end
+    bin_min = number_to_binary( min )
+    bin_max = number_to_binary( max )
     zcount( connection_handle, key, bin_min, bin_max )
   end
 
@@ -1015,10 +1006,8 @@ defmodule RedisEx.Client do
 
     if is_list( opts[:weights] ) do
       normalized_weights_list = Enum.map( opts[:weights],
-                                          fn (x) when is_binary(x) -> x
-                                             (x) when is_number(x) -> number_to_binary(x)
-                                          end )
-        opt_list = [ "WEIGHTS" | :lists.concat( [ normalized_weights_list, opt_list ] ) ]
+                                          fn (x) -> number_to_binary(x) end )
+      opt_list = [ "WEIGHTS" | :lists.concat( [ normalized_weights_list, opt_list ] ) ]
     end
 
     if is_atom( opts[:aggregate] ) and opts[:aggregate] in [ :sum, :min, :max ] do
@@ -1046,9 +1035,7 @@ defmodule RedisEx.Client do
 
 
     if opts[:withscores] do
-      Enum.chunk( result, 2 )
-      |> Enum.map( fn ( [x, y] ) -> [ x, binary_to_score( y ) ] end )
-      |> List.flatten
+      process_scorelist( result )
     else
       result
     end
@@ -1066,17 +1053,13 @@ defmodule RedisEx.Client do
       opt_list = [ "LIMIT", integer_to_binary(offset), integer_to_binary(count) | opt_list ]
     end
 
-    if opts[:withscores] do
-      opt_list = [ "WITHSCORES" | opt_list ]
-    end
+    if opts[:withscores], do: opt_list = [ "WITHSCORES" | opt_list ]
 
     result = [ "ZRANGEBYSCORE", key, min, max | opt_list ]
              |> process( connection_handle.handle )
 
     if opts[:withscores] do
-      Enum.chunk( result, 2 )
-      |> Enum.map( fn( [x, y] ) -> [ x, binary_to_score( y ) ] end )
-      |> List.flatten
+      process_scorelist( result )
     else
       result
     end
@@ -1142,16 +1125,12 @@ defmodule RedisEx.Client do
        and is_integer( range_end ) do
 
     opt_list = []
-    if opts[:withscores] do
-      opt_list = [ "WITHSCORES" | opt_list ] 
-    end
+    if opts[:withscores], do: opt_list = [ "WITHSCORES" | opt_list ] 
 
     result = [ "ZREVRANGE", key, integer_to_binary(range_start), integer_to_binary(range_end) | opt_list ]
              |> process( connection_handle.handle )
     if opts[:withscores] do
-      Enum.chunk( result, 2 )
-      |> Enum.map( fn ( [x, y] ) -> [ x, binary_to_score( y ) ] end )
-      |> List.flatten
+      process_scorelist( result )
     else
       result
     end
@@ -1169,16 +1148,13 @@ defmodule RedisEx.Client do
       opt_list = [ "LIMIT", integer_to_binary( offset ), integer_to_binary( count ) | opt_list ]
     end
 
-    if opts[:withscores] do
-      opt_list = [ "WITHSCORES" | opt_list ]
-    end
+    if opts[:withscores], do: opt_list = [ "WITHSCORES" | opt_list ]
 
     result = [ "ZREVRANGEBYSCORE", key, max, min | opt_list ]
              |> process( connection_handle.handle )
+
     if opts[:withscores] do
-      Enum.chunk( result, 2 )
-      |> Enum.map( fn ( [x, y] ) -> [ x, binary_to_score( y ) ] end )
-      |> List.flatten
+      process_scorelist( result )
     else
       result
     end
@@ -1600,6 +1576,7 @@ defmodule RedisEx.Client do
 
   defp number_to_binary( number ) when is_integer( number ), do: integer_to_binary( number )
   defp number_to_binary( number ) when is_float( number ), do: float_to_binary( number )
+  defp number_to_binary( binary ) when is_binary( binary ), do: binary
 
   defp binary_to_score( "+inf" ), do: "+inf"
   defp binary_to_score( "-inf" ), do: "-inf"
@@ -1618,5 +1595,11 @@ defmodule RedisEx.Client do
   defp integer_result_to_boolean( 1 ), do: true
   defp integer_result_to_boolean( 0 ), do: false
   defp integer_result_to_boolean( x ), do: x
+
+  defp process_scorelist( value_score_list ) when is_list( value_score_list ) do
+    Enum.chunk( value_score_list, 2 )
+    |> Enum.map( fn ( [x, y] ) -> [ x, binary_to_score( y ) ] end )
+    |> List.flatten
+  end
 
 end
