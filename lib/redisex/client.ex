@@ -1,7 +1,7 @@
 defmodule RedisEx.Client do
   #TODO: Unit test
-  alias RedisEx.Connection
   alias RedisEx.ConnectionSupervisor
+  import RedisEx.Connection, only: [ process: 2 ]
 
   defrecord ConnectionHandle, handle: nil
 
@@ -24,31 +24,31 @@ defmodule RedisEx.Client do
   def del( connection_handle, key )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) do
-    command_list = [ "DEL", key ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "DEL", key ] 
+    |> process( connection_handle.handle )
   end
 
   def del( connection_handle, key_list )
       when is_record( connection_handle, ConnectionHandle )
        and is_list( key_list ) 
        and length( key_list ) > 0 do
-    command_list = [ "DEL" | key_list ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "DEL" | key_list ] 
+    |> process( connection_handle.handle )
   end
 
   def dump( connection_handle, key )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) do
-    command_list = [ "DUMP", key ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "DUMP", key ] 
+    |> process( connection_handle.handle )
   end
 
   def exists( connection_handle, key )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) do
-    command_list = [ "EXISTS", key ]
-    Connection.process( connection_handle.handle, command_list )
-      |> integer_result_to_boolean
+    [ "EXISTS", key ] 
+    |> process( connection_handle.handle )
+    |> integer_result_to_boolean
   end
 
   def expire( connection_handle, key, seconds )
@@ -56,24 +56,24 @@ defmodule RedisEx.Client do
        and is_binary( key ) 
        and is_integer( seconds ) 
        and seconds >= 0 do
-    command_list = [ "EXPIRE", key, integer_to_binary( seconds ) ]
-    Connection.process( connection_handle.handle, command_list ) 
-      |> integer_result_to_boolean
+    [ "EXPIRE", key, integer_to_binary( seconds ) ]
+    |> process( connection_handle.handle )
+    |> integer_result_to_boolean
   end
 
   def expireat( connection_handle, key, timestamp )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) 
        and is_integer( timestamp ) do
-    command_list = [ "EXPIREAT", key, integer_to_binary( timestamp ) ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "EXPIREAT", key, integer_to_binary( timestamp ) ]
+    |> process( connection_handle.handle )
   end
 
   def keys( connection_handle, pattern )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( pattern ) do
-    command_list = [ "KEYS", pattern ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "KEYS", pattern ]
+    |> process( connection_handle.handle )
   end
 
   def migrate( connection_handle, host, port, key, db, timeout, opts \\ [] )
@@ -90,8 +90,8 @@ defmodule RedisEx.Client do
     if opts[:replace], do: opt_list = [ "REPLACE" | opt_list ]
     if opts[:copy], do: opt_list = [ "COPY" | opt_list ]
 
-    command_list = [ "MIGRATE", host, port, key, integer_to_binary(db), integer_to_binary(timeout) | opt_list ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "MIGRATE", host, port, key, integer_to_binary(db), integer_to_binary(timeout) | opt_list ]
+    |> process( connection_handle.handle )
   end
 
   def move( connection_handle, key, db )
@@ -99,24 +99,24 @@ defmodule RedisEx.Client do
        and is_binary( key ) 
        and is_integer( db ) 
        and db >= 0 do
-    command_list = [ "MOVE", key, db ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "MOVE", key, db ]
+    |> process( connection_handle.handle )
   end
 
   def object( connection_handle, subcommand, arguments ) 
       when is_record( connection_handle, ConnectionHandle )
        and subcommand in [:REFCOUNT, :ENCODING, :IDLETIME]
        and is_list( arguments ) do
-    command_list = [ "OBJECT", atom_to_binary( subcommand ) | arguments ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "OBJECT", atom_to_binary( subcommand ) | arguments ]
+    |> process( connection_handle.handle )
   end
 
   def persist( connection_handle, key )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) do
-    command_list = [ "PERSIST", key ]
-    Connection.process( connection_handle.handle, command_list )
-      |> integer_result_to_boolean
+    [ "PERSIST", key ]
+    |> process( connection_handle.handle )
+    |> integer_result_to_boolean
   end
 
   def pexpire( connection_handle, key, milliseconds )
@@ -124,9 +124,9 @@ defmodule RedisEx.Client do
        and is_binary( key ) 
        and is_integer( milliseconds ) 
        and milliseconds > 0 do
-    command_list = [ "PEXPIRE", key, integer_to_binary( milliseconds ) ]
-    Connection.process( connection_handle.handle, command_list )
-      |> integer_result_to_boolean
+    [ "PEXPIRE", key, integer_to_binary( milliseconds ) ]
+    |> process( connection_handle.handle )
+    |> integer_result_to_boolean
   end
 
   def pexpireat( connection_handle, key, millisecond_timestamp )
@@ -134,15 +134,17 @@ defmodule RedisEx.Client do
        and is_binary( key ) 
        and is_integer( millisecond_timestamp ) 
        and millisecond_timestamp > 0 do
-    command_list = [ "PEXPIREAT", key, integer_to_binary( millisecond_timestamp ) ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "PEXPIREAT", key, integer_to_binary( millisecond_timestamp ) ]
+    |> process( connection_handle.handle )
   end
 
   def pttl( connection_handle, key )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) do
-    command_list = [ "PTTL", key ]
-    case Connection.process( connection_handle.handle, command_list ) do
+    result = [ "PTTL", key ]
+             |> process( connection_handle.handle )
+
+    case result do
       -2 -> nil
       -1 -> :no_ttl
       x  -> x
@@ -151,24 +153,24 @@ defmodule RedisEx.Client do
 
   def randomkey( connection_handle )
       when is_record( connection_handle, ConnectionHandle ) do
-    command_list = [ "RANDOMKEY" ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "RANDOMKEY" ]
+    |> process( connection_handle.handle )
   end
 
   def rename( connection_handle, key, newkey )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) 
        and is_binary( newkey ) do
-    command_list = [ "RENAME", key, newkey ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "RENAME", key, newkey ]
+    |> process( connection_handle.handle )
   end
 
   def renamenx( connection_handle, key, newkey )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) 
        and is_binary( newkey ) do
-    command_list = [ "RENAMENX", key, newkey ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "RENAMENX", key, newkey ]
+    |> process( connection_handle.handle )
   end
 
   def restore( connection_handle, key, ttl, serialized_value )
@@ -177,8 +179,8 @@ defmodule RedisEx.Client do
        and ttl >= 0
        and is_binary( key ) 
        and is_binary( serialized_value ) do
-    command_list = [ "RESTORE", key, integer_to_binary( ttl ), serialized_value ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "RESTORE", key, integer_to_binary( ttl ), serialized_value ]
+    |> process( connection_handle.handle )
   end
 
   def scan( connection_handle, cursor, opts \\ [] )
@@ -188,8 +190,8 @@ defmodule RedisEx.Client do
     if :count in opts, do: opt_list = [ "COUNT", opts[:count] | opt_list ]
     if :match in opts, do: opt_list = [ "MATCH", opts[:match] | opt_list ]
 
-    command_list = [ "SCAN", cursor | opt_list ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "SCAN", cursor | opt_list ]
+    |> process( connection_handle.handle )
   end
 
   def sort( connection_handle, key, opts \\ [] )
@@ -208,37 +210,45 @@ defmodule RedisEx.Client do
     end
 
     case opts[:order] do
-      :asc -> opt_list = [ "ASC" | opt_list ]
+      :asc  -> opt_list = [ "ASC" | opt_list ]
       :desc -> opt_list = [ "DESC" | opt_list ]
       _     -> opt_list
     end
 
     case opts[:limit] do
-      a..b when is_integer( a ) and is_integer(b) -> opt_list = [ "LIMIT", integer_to_binary(a), integer_to_binary(b) | opt_list ]
+      a..b when is_integer( a ) and is_integer(b) -> 
+        opt_list = [ "LIMIT", integer_to_binary(a), integer_to_binary(b) | opt_list ]
       _ -> opt_list
     end
 
     case opts[:by] do
-      keypattern when is_binary( keypattern ) -> opt_list = [ "BY", keypattern | opt_list ]
+      keypattern when is_binary( keypattern ) -> 
+        opt_list = [ "BY", keypattern | opt_list ]
       _ -> opt_list
     end
 
     case opts[:get] do
-      [ keypattern, "#" ] when is_binary( keypattern ) -> opt_list = [ "GET", keypattern, "GET", "#" | opt_list ]
-      keypattern when is_binary( keypattern ) -> opt_list = [ "GET", keypattern | opt_list ]
+      [ keypattern, "#" ] when is_binary( keypattern ) -> 
+        opt_list = [ "GET", keypattern, "GET", "#" | opt_list ]
+
+      keypattern when is_binary( keypattern ) -> 
+        opt_list = [ "GET", keypattern | opt_list ]
+
       "#" -> opt_list = [ "GET", "#" | opt_list ]
-      _ -> opt_list
+      _   -> opt_list
     end
 
-    command_list = [ "SORT", key | opt_list ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "SORT", key | opt_list ]
+    |> process( connection_handle.handle )
   end
 
   def ttl( connection_handle, key )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) do
-    command_list = [ "TTL", key ]
-    case Connection.process( connection_handle.handle, command_list ) do
+    result = [ "TTL", key ]
+             |> process( connection_handle.handle )
+
+    case result do
       -2 -> nil
       -1 -> :no_ttl
       x  -> x
@@ -248,8 +258,9 @@ defmodule RedisEx.Client do
   def type( connection_handle, key )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) do
-    command_list = [ "TYPE", key ]
-    case Connection.process( connection_handle.handle, command_list ) do
+    result = [ "TYPE", key ]
+             |> process( connection_handle.handle )
+    case result do
       "string" -> :string
       "list"   -> :list
       "hash"   -> :hash
@@ -264,15 +275,15 @@ defmodule RedisEx.Client do
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key )
        and is_binary( value ) do
-    command_list = [ "APPEND", key, value ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "APPEND", key, value ]
+    |> process( connection_handle.handle )
   end
                                           
   def bitcount( connection_handle, key ) 
       when is_record( connection_handle, ConnectionHandle ) 
        and is_binary( key ) do
-    command_list = [ "BITCOUNT", key ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "BITCOUNT", key ]
+    |> process( connection_handle.handle )
   end
 
   def bitcount( connection_handle, key, range_start, range_end ) 
@@ -280,16 +291,16 @@ defmodule RedisEx.Client do
        and is_binary( key )
        and is_integer( range_start )
        and is_integer( range_end ) do
-    command_list = [ "BITCOUNT", key, integer_to_binary(range_start), integer_to_binary(range_end) ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "BITCOUNT", key, integer_to_binary(range_start), integer_to_binary(range_end) ]
+    |> process( connection_handle.handle )
   end
 
   def bitop( connection_handle, :NOT, dest_key, key ) 
       when is_binary( key ) 
        and is_binary( dest_key )
        and is_record( connection_handle, ConnectionHandle ) do
-    command_list = [ "BITOP", "NOT", dest_key, key ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "BITOP", "NOT", dest_key, key ]
+    |> process( connection_handle.handle )
   end
 
   def bitop( connection_handle, op, dest_key, key_list ) 
@@ -298,16 +309,16 @@ defmodule RedisEx.Client do
        and is_binary( dest_key )
        and is_list( key_list )
        and is_record( connection_handle, ConnectionHandle ) do
-    command_list = [ "BITOP", atom_to_binary( op ), dest_key | key_list ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "BITOP", atom_to_binary( op ), dest_key | key_list ]
+    |> process( connection_handle.handle )
   end
 
   def bitpos( connection_handle, key, bit ) 
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key )
        and bit in [ 0, 1 ] do
-    command_list = [ "BITPOS", key, integer_to_binary( bit ) ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "BITPOS", key, integer_to_binary( bit ) ]
+    |> process( connection_handle.handle )
   end
 
   def bitpos( connection_handle, key, bit, range_start )
@@ -315,8 +326,8 @@ defmodule RedisEx.Client do
        and is_binary( key )
        and bit in [ 0, 1 ]
        and is_integer( range_start ) do
-    command_list = [ "BITPOS", key, integer_to_binary( bit ), integer_to_binary( range_start ) ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "BITPOS", key, integer_to_binary( bit ), integer_to_binary( range_start ) ]
+    |> process( connection_handle.handle )
   end
 
   def bitpos( connection_handle, key, bit, range_start, range_end ) 
@@ -325,30 +336,30 @@ defmodule RedisEx.Client do
        and bit in [ 0, 1 ] 
        and is_integer( range_start )
        and is_integer( range_end ) do
-    command_list = [ "BITPOS", key, integer_to_binary( bit ), integer_to_binary( range_start ), integer_to_binary( range_end ) ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "BITPOS", key, integer_to_binary( bit ), integer_to_binary( range_start ), integer_to_binary( range_end ) ]
+    |> process( connection_handle.handle )
   end
 
   def decr( connection_handle, key ) 
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) do
-    command_list = [ "DECR", key ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "DECR", key ]
+    |> process( connection_handle.handle )
   end
 
   def decrby( connection_handle, key, increment ) 
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key )
        and is_integer( increment ) do
-    command_list = [ "DECRBY", key, integer_to_binary( increment ) ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "DECRBY", key, integer_to_binary( increment ) ]
+    |> process( connection_handle.handle )
   end
 
   def get( connection_handle, key ) 
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) do
-    command_list = [ "GET", key ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "GET", key ]
+    |> process( connection_handle.handle )
   end
 
   def getbit( connection_handle, key, offset ) 
@@ -356,8 +367,8 @@ defmodule RedisEx.Client do
        and is_binary( key )
        and is_integer( offset )
        and offset >= 0 do
-    command_list = [ "GETBIT", key, integer_to_binary( offset ) ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "GETBIT", key, integer_to_binary( offset ) ]
+    |> process( connection_handle.handle )
   end
 
   def getrange( connection_handle, key, range_start, range_end )
@@ -365,39 +376,40 @@ defmodule RedisEx.Client do
        and is_binary( key ) 
        and is_integer( range_start )
        and is_integer( range_end ) do
-    command_list = [ "GETRANGE", key, integer_to_binary(range_start), integer_to_binary(range_end) ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "GETRANGE", key, integer_to_binary(range_start), integer_to_binary(range_end) ]
+    |> process( connection_handle.handle )
   end
 
   def getset( connection_handle, key, value ) 
       when is_record( connection_handle, ConnectionHandle ) 
        and is_binary( key )
        and is_binary( value ) do
-    command_list = [ "GETSET", key, value ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "GETSET", key, value ]
+    |> process( connection_handle.handle )
   end
 
   def incr( connection_handle, key ) 
       when is_record( connection_handle, ConnectionHandle ) 
        and is_binary( key ) do
-    command_list = [ "INCR", key ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "INCR", key ]
+    |> process( connection_handle.handle )
   end
 
   def incrby( connection_handle, key, increment ) 
       when is_record( connection_handle, ConnectionHandle ) 
        and is_binary( key ) 
        and is_integer( increment ) do
-    command_list = [ "INCRBY", key, integer_to_binary( increment ) ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "INCRBY", key, integer_to_binary( increment ) ]
+    |> process( connection_handle.handle )
   end
 
   def incrbyfloat( connection_handle, key, increment ) 
       when is_record( connection_handle, ConnectionHandle ) 
        and is_binary( key )
        and is_binary( increment ) do
-    command_list = [ "INCRBYFLOAT", key, increment ]
-    result = Connection.process( connection_handle.handle, command_list )
+    result = [ "INCRBYFLOAT", key, increment ] 
+             |> process( connection_handle.handle )
+
     case result do
       { :redis_error, error_message } -> { :redis_error, error_message }
       float_as_binary -> binary_to_number( float_as_binary )
@@ -414,8 +426,8 @@ defmodule RedisEx.Client do
       when is_record( connection_handle, ConnectionHandle )
        and is_list( key_list ) 
        and length( key_list ) > 0 do
-    command_list = [ "MGET" | key_list ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "MGET" | key_list ]
+    |> process( connection_handle.handle )
   end
 
   def mset( connection_handle, key_value_list ) 
@@ -423,8 +435,8 @@ defmodule RedisEx.Client do
        and is_list( key_value_list )
        and length( key_value_list ) > 0
        and rem( length( key_value_list ), 2 ) == 0 do
-    command_list = [ "MSET" | key_value_list ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "MSET" | key_value_list ]
+    |> process( connection_handle.handle )
   end
 
   def msetnx( connection_handle, key_value_list ) 
@@ -432,9 +444,9 @@ defmodule RedisEx.Client do
        and is_list( key_value_list )
        and length( key_value_list ) > 0
        and rem( length( key_value_list ), 2 ) == 0 do
-    command_list = [ "MSETNX" | key_value_list ]
-    Connection.process( connection_handle.handle, command_list )
-      |> integer_result_to_boolean
+    [ "MSETNX" | key_value_list ]
+    |> process( connection_handle.handle )
+    |> integer_result_to_boolean
   end
 
   def psetex( connection_handle, key, milliseconds, value ) 
@@ -442,8 +454,8 @@ defmodule RedisEx.Client do
        and is_binary( key )
        and is_integer( milliseconds )
        and is_binary( value ) do
-    command_list = [ "PSETEX", key, integer_to_binary( milliseconds ), value ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "PSETEX", key, integer_to_binary( milliseconds ), value ]
+    |> process( connection_handle.handle )
   end
 
   #TODO: Support set options
@@ -451,8 +463,8 @@ defmodule RedisEx.Client do
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) 
        and is_binary( value ) do
-    command_list = [ "SET", key, value ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "SET", key, value ]
+    |> process( connection_handle.handle )
   end
 
   def setbit( connection_handle, key, offset, value ) 
@@ -461,8 +473,8 @@ defmodule RedisEx.Client do
        and is_integer( offset )
        and offset >= 0
        and value in [ 0, 1 ] do
-    command_list = [ "SETBIT", key, integer_to_binary( offset ), integer_to_binary( value ) ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "SETBIT", key, integer_to_binary( offset ), integer_to_binary( value ) ]
+    |> process( connection_handle.handle )
   end
 
   def setex( connection_handle, key, seconds, value ) 
@@ -471,17 +483,17 @@ defmodule RedisEx.Client do
        and is_integer( seconds )
        and seconds >= 0
        and is_binary( value ) do
-    command_list = [ "SETEX", key, integer_to_binary( seconds ), value ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "SETEX", key, integer_to_binary( seconds ), value ]
+    |> process( connection_handle.handle )
   end
 
   def setnx( connection_handle, key, value ) 
       when is_record( connection_handle, ConnectionHandle ) 
        and is_binary( key )
        and is_binary( value ) do
-    command_list = [ "SETNX", key, value ]
-    Connection.process( connection_handle.handle, command_list )
-      |> integer_result_to_boolean
+    [ "SETNX", key, value ]
+    |> process( connection_handle.handle )
+    |> integer_result_to_boolean
   end
 
   def setrange( connection_handle, key, offset, value ) 
@@ -490,15 +502,15 @@ defmodule RedisEx.Client do
        and is_integer( offset )
        and offset >= 0
        and is_binary( value ) do
-    command_list = [ "SETRANGE", key, integer_to_binary( offset ), value ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "SETRANGE", key, integer_to_binary( offset ), value ]
+    |> process( connection_handle.handle )
   end
 
   def strlen( connection_handle, key ) 
       when is_record( connection_handle, ConnectionHandle ) 
        and is_binary( key ) do
-    command_list = [ "STRLEN", key ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "STRLEN", key ]
+    |> process( connection_handle.handle )
   end
 
   # Hash commands
@@ -507,32 +519,32 @@ defmodule RedisEx.Client do
        and is_binary( key ) 
        and is_list( field_list )
        and length( field_list ) > 0 do
-    command_list = [ "HDEL", key | field_list ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "HDEL", key | field_list ]
+    |> process( connection_handle.handle )
   end
 
   def hexists( connection_handle, key, field )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key )
        and is_binary( field ) do
-    command_list = [ "HEXISTS", key, field ]
-    Connection.process( connection_handle.handle, command_list )
-      |> integer_result_to_boolean
+    [ "HEXISTS", key, field ]
+    |> process( connection_handle.handle )
+    |> integer_result_to_boolean
   end
 
   def hget( connection_handle, key, field )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key )
        and is_binary( field ) do
-    command_list = [ "HGET", key, field ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "HGET", key, field ]
+    |> process( connection_handle.handle )
   end
 
   def hgetall( connection_handle, key )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) do
-    command_list = [ "HGETALL", key ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "HGETALL", key ]
+    |> process( connection_handle.handle )
   end
 
   def hincrby( connection_handle, key, field, increment )
@@ -540,8 +552,8 @@ defmodule RedisEx.Client do
        and is_binary( key )
        and is_binary( field )
        and is_integer( increment ) do
-    command_list = [ "HINCRBY", key, field, integer_to_binary( increment ) ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "HINCRBY", key, field, integer_to_binary( increment ) ]
+    |> process( connection_handle.handle )
   end
 
   def hincrbyfloat( connection_handle, key, field, increment )
@@ -549,8 +561,9 @@ defmodule RedisEx.Client do
        and is_binary( key )
        and is_binary( field ) 
        and is_binary( increment ) do
-    command_list = [ "HINCRBYFLOAT", key, field, increment ]
-    case Connection.process( connection_handle.handle, command_list ) do
+    result = [ "HINCRBYFLOAT", key, field, increment ]
+             |> process( connection_handle.handle )
+    case result do
       { :redis_error, error_message } -> { :redis_error, error_message }
       float_as_binary -> binary_to_number( float_as_binary )
     end
@@ -567,15 +580,15 @@ defmodule RedisEx.Client do
   def hkeys( connection_handle, key )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) do
-    command_list = [ "HKEYS", key ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "HKEYS", key ]
+    |> process( connection_handle.handle )
   end
 
   def hlen( connection_handle, key )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) do
-    command_list = [ "HLEN", key ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "HLEN", key ]
+    |> process( connection_handle.handle )
   end
 
   def hmget( connection_handle, key, field_list )
@@ -583,8 +596,8 @@ defmodule RedisEx.Client do
        and is_binary( key ) 
        and is_list( field_list )
        and length( field_list ) > 0 do
-    command_list = [ "HMGET", key | field_list ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "HMGET", key | field_list ]
+    |> process( connection_handle.handle )
   end
 
   def hmset( connection_handle, key, field_value_list )
@@ -593,8 +606,8 @@ defmodule RedisEx.Client do
        and is_list( field_value_list )
        and length( field_value_list ) > 0
        and rem( length( field_value_list ), 2 ) == 0 do
-    command_list = [ "HMSET", key | field_value_list ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "HMSET", key | field_value_list ]
+    |> process( connection_handle.handle )
   end
 
   def hscan( connection_handle, key, cursor, opts \\ [] )
@@ -605,8 +618,8 @@ defmodule RedisEx.Client do
     if :count in opts, do: opt_list = [ "COUNT", opts[:count] | opt_list ]
     if :match in opts, do: opt_list = [ "MATCH", opts[:match] | opt_list ]
 
-    command_list = [ "HSCAN", cursor | opt_list ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "HSCAN", cursor | opt_list ]
+    |> process( connection_handle.handle )
   end
 
   def hset( connection_handle, key, field, value )
@@ -614,8 +627,9 @@ defmodule RedisEx.Client do
        and is_binary( key )
        and is_binary( field )
        and is_binary( value ) do
-    command_list = [ "HSET", key, field, value ]
-    case Connection.process( connection_handle.handle, command_list ) do
+    result = [ "HSET", key, field, value ]
+             |> process( connection_handle.handle )
+    case result do
       1 -> :insert
       0 -> :update
       other -> other
@@ -627,16 +641,16 @@ defmodule RedisEx.Client do
        and is_binary( key )
        and is_binary( field ) 
        and is_binary( value ) do
-    command_list = [ "HSETNX", key, field, value ]
-    Connection.process( connection_handle.handle, command_list )
-      |> integer_result_to_boolean
+    [ "HSETNX", key, field, value ]
+    |> process( connection_handle.handle )
+    |> integer_result_to_boolean
   end
 
   def hvals( connection_handle, key )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) do
-    command_list = [ "HVALS", key ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "HVALS", key ]
+    |> process( connection_handle.handle )
   end
 
 
@@ -647,8 +661,8 @@ defmodule RedisEx.Client do
        and length( key_list ) > 0
        and is_integer( seconds )
        and seconds >= 0 do
-    command_list = [ "BLPOP" | key_list ] ++ [ integer_to_binary( seconds ) ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "BLPOP" | key_list ] ++ [ integer_to_binary( seconds ) ]
+    |> process( connection_handle.handle )
   end
 
   def brpop( connection_handle, key_list, seconds )
@@ -657,8 +671,8 @@ defmodule RedisEx.Client do
        and length( key_list ) > 0
        and is_integer( seconds )
        and seconds >= 0 do
-    command_list = [ "BRPOP" | key_list ] ++ [ integer_to_binary( seconds ) ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "BRPOP" | key_list ] ++ [ integer_to_binary( seconds ) ]
+    |> process( connection_handle.handle )
   end
 
   def brpoplpush( connection_handle, source, destination, seconds )
@@ -667,16 +681,16 @@ defmodule RedisEx.Client do
        and is_binary( destination )
        and is_integer( seconds )
        and seconds >= 0 do
-    command_list = [ "BRPOPLPUSH", source, destination, integer_to_binary( seconds ) ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "BRPOPLPUSH", source, destination, integer_to_binary( seconds ) ]
+    |> process( connection_handle.handle )
   end
 
   def lindex( connection_handle, key, index )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) 
        and is_integer( index ) do
-    command_list = [ "LINDEX", key, integer_to_binary( index ) ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "LINDEX", key, integer_to_binary( index ) ]
+    |> process( connection_handle.handle )
   end
 
   def linsert( connection_handle, key, where, pivot, value )
@@ -685,22 +699,22 @@ defmodule RedisEx.Client do
        and where in [ :before, :after ]
        and is_binary( pivot )
        and is_binary( value ) do
-    command_list = [ "LINSERT", key, atom_to_binary( where ), pivot, value ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "LINSERT", key, atom_to_binary( where ), pivot, value ]
+    |> process( connection_handle.handle )
   end
 
   def llen( connection_handle, key )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) do
-    command_list = [ "LLEN", key ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "LLEN", key ]
+    |> process( connection_handle.handle )
   end
 
   def lpop( connection_handle, key )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) do
-    command_list = [ "LPOP", key ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "LPOP", key ]
+    |> process( connection_handle.handle )
   end
 
   def lpush( connection_handle, key, value_list )
@@ -709,16 +723,16 @@ defmodule RedisEx.Client do
 
        and is_list( value_list )
        and length( value_list ) > 0 do
-    command_list = [ "LPUSH", key | value_list ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "LPUSH", key | value_list ]
+    |> process( connection_handle.handle )
   end
 
   def lpushx( connection_handle, key, value )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) 
        and is_binary( value ) do
-    command_list = [ "LPUSHX", key, value ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "LPUSHX", key, value ]
+    |> process( connection_handle.handle )
   end
 
   def lrange( connection_handle, key, range_start, range_end )
@@ -726,8 +740,8 @@ defmodule RedisEx.Client do
        and is_binary( key )
        and is_integer( range_start )
        and is_integer( range_end ) do
-    command_list = [ "LRANGE", key, integer_to_binary( range_start ), integer_to_binary( range_end ) ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "LRANGE", key, integer_to_binary( range_start ), integer_to_binary( range_end ) ]
+    |> process( connection_handle.handle )
   end
 
   def lrem( connection_handle, key, count, value )
@@ -735,8 +749,8 @@ defmodule RedisEx.Client do
        and is_binary( key ) 
        and is_integer( count ) 
        and is_binary( value ) do
-    command_list = [ "LREM", key, integer_to_binary( count ), value ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "LREM", key, integer_to_binary( count ), value ]
+    |> process( connection_handle.handle )
   end
 
   def lset( connection_handle, key, index, value )
@@ -744,8 +758,8 @@ defmodule RedisEx.Client do
        and is_binary( key ) 
        and is_integer( index )
        and is_binary( value ) do
-    command_list = [ "LSET", key, integer_to_binary( index ), value ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "LSET", key, integer_to_binary( index ), value ]
+    |> process( connection_handle.handle )
   end
 
   def ltrim( connection_handle, key, range_start, range_end )
@@ -753,23 +767,23 @@ defmodule RedisEx.Client do
        and is_binary( key ) 
        and is_integer( range_start )
        and is_integer( range_end ) do
-    command_list = [ "LTRIM", key, integer_to_binary( range_start ), integer_to_binary( range_end ) ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "LTRIM", key, integer_to_binary( range_start ), integer_to_binary( range_end ) ]
+    |> process( connection_handle.handle )
   end
 
   def rpop( connection_handle, key )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) do
-    command_list = [ "RPOP", key ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "RPOP", key ]
+    |> process( connection_handle.handle )
   end
 
   def rpoplpush( connection_handle, source, destination )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( source )
        and is_binary( destination ) do
-    command_list = [ "RPOPLPUSH", source, destination ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "RPOPLPUSH", source, destination ]
+    |> process( connection_handle.handle )
   end
 
   def rpush( connection_handle, key, value_list )
@@ -777,16 +791,16 @@ defmodule RedisEx.Client do
        and is_binary( key )
        and is_list( value_list )
        and length( value_list ) > 0 do
-    command_list = [ "RPUSH", key | value_list ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "RPUSH", key | value_list ]
+    |> process( connection_handle.handle )
   end
 
   def rpushx( connection_handle, key, value )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) 
        and is_binary( value ) do
-    command_list = [ "RPUSHX", key, value ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "RPUSHX", key, value ]
+    |> process( connection_handle.handle )
   end
 
 
@@ -796,23 +810,23 @@ defmodule RedisEx.Client do
        and is_binary( key ) 
        and is_list( member_list )
        and length( member_list ) > 0 do
-    command_list = [ "SADD", key | member_list ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "SADD", key | member_list ]
+    |> process( connection_handle.handle )
   end
 
   def scard( connection_handle, key )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) do
-    command_list = [ "SCARD", key ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "SCARD", key ]
+    |> process( connection_handle.handle )
   end
 
   def sdiff( connection_handle, key_list )
       when is_record( connection_handle, ConnectionHandle )
        and is_list( key_list ) 
        and length( key_list ) > 0 do
-    command_list = [ "SDIFF" | key_list ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "SDIFF" | key_list ]
+    |> process( connection_handle.handle )
   end
 
   def sdiffstore( connection_handle, destination, key_list )
@@ -820,16 +834,16 @@ defmodule RedisEx.Client do
        and is_binary( destination )
        and is_list( key_list ) 
        and length( key_list ) > 0 do
-    command_list = [ "SDIFFSTORE", destination | key_list ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "SDIFFSTORE", destination | key_list ]
+    |> process( connection_handle.handle )
   end
 
   def sinter( connection_handle, key_list )
       when is_record( connection_handle, ConnectionHandle )
        and is_list( key_list ) 
        and length( key_list ) > 0 do
-    command_list = [ "SINTER" | key_list ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "SINTER" | key_list ]
+    |> process( connection_handle.handle )
   end
 
   def sinterstore( connection_handle, destination, key_list )
@@ -837,24 +851,24 @@ defmodule RedisEx.Client do
        and is_binary( destination )
        and is_list( key_list ) 
        and length( key_list ) > 0 do
-    command_list = [ "SINTERSTORE", destination | key_list ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "SINTERSTORE", destination | key_list ]
+    |> process( connection_handle.handle )
   end
 
   def sismember( connection_handle, key, member )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) 
        and is_binary( member ) do
-    command_list = [ "SISMEMBER", key, member ]
-    Connection.process( connection_handle.handle, command_list )
-      |> integer_result_to_boolean
+    [ "SISMEMBER", key, member ]
+    |> process( connection_handle.handle )
+    |> integer_result_to_boolean
   end
 
   def smembers( connection_handle, key )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) do
-    command_list = [ "SMEMBERS", key ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "SMEMBERS", key ]
+    |> process( connection_handle.handle )
   end
 
   def smove( connection_handle, source_key, destination_key, member )
@@ -862,31 +876,31 @@ defmodule RedisEx.Client do
        and is_binary( source_key ) 
        and is_binary( destination_key ) 
        and is_binary( member ) do
-    command_list = [ "SMOVE", source_key, destination_key, member ]
-    Connection.process( connection_handle.handle, command_list )
-      |> integer_result_to_boolean
+    [ "SMOVE", source_key, destination_key, member ]
+    |> process( connection_handle.handle )
+    |> integer_result_to_boolean
   end
 
   def spop( connection_handle, key )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) do
-    command_list = [ "SPOP", key ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "SPOP", key ]
+    |> process( connection_handle.handle )
   end
 
   def srandmember( connection_handle, key )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) do
-    command_list = [ "SRANDMEMBER", key ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "SRANDMEMBER", key ]
+    |> process( connection_handle.handle )
   end
 
   def srandmember( connection_handle, key, count )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) 
        and is_integer( count ) do
-    command_list = [ "SRANDMEMBER", key, count ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "SRANDMEMBER", key, count ]
+    |> process( connection_handle.handle )
   end
 
   def srem( connection_handle, key, member_list )
@@ -894,8 +908,8 @@ defmodule RedisEx.Client do
        and is_binary( key )
        and is_list( member_list ) 
        and length( member_list ) > 0 do
-    command_list = [ "SREM", key | member_list ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "SREM", key | member_list ]
+    |> process( connection_handle.handle )
   end
 
   def sscan( connection_handle, key, cursor, opts \\ [] )
@@ -906,16 +920,16 @@ defmodule RedisEx.Client do
     if :count in opts, do: opt_list = [ "COUNT", opts[:count] | opt_list ]
     if :match in opts, do: opt_list = [ "MATCH", opts[:match] | opt_list ]
 
-    command_list = [ "SSCAN", cursor | opt_list ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "SSCAN", cursor | opt_list ]
+    |> process( connection_handle.handle )
   end
 
   def sunion( connection_handle, key_list )
       when is_record( connection_handle, ConnectionHandle )
        and is_list( key_list ) 
        and length( key_list ) > 0 do
-    command_list = [ "SUNION" | key_list ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "SUNION" | key_list ]
+    |> process( connection_handle.handle )
   end
 
   def sunionstore( connection_handle, destination_key, key_list )
@@ -923,8 +937,8 @@ defmodule RedisEx.Client do
        and is_binary( destination_key ) 
        and is_list( key_list ) 
        and length( key_list ) > 0 do
-    command_list = [ "SUNIONSTORE", destination_key | key_list ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "SUNIONSTORE", destination_key | key_list ]
+    |> process( connection_handle.handle )
   end
 
 
@@ -942,15 +956,15 @@ defmodule RedisEx.Client do
                                        (x) when is_float( x ) -> float_to_binary(x) 
                                      end )
          
-    command_list = [ "ZADD", key | normalized_score_member_list ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "ZADD", key | normalized_score_member_list ]
+    |> process( connection_handle.handle )
   end
 
   def zcard( connection_handle, key )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) do
-    command_list = [ "ZCARD", key ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "ZCARD", key ]
+    |> process( connection_handle.handle )
   end
 
   #TODO: BEtter guarding of mix, max values
@@ -959,8 +973,8 @@ defmodule RedisEx.Client do
        and is_binary( key ) 
        and is_binary( min ) 
        and is_binary( max ) do
-    command_list = [ "ZCOUNT", key, min, max ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "ZCOUNT", key, min, max ]
+    |> process( connection_handle.handle )
   end
   def zcount( connection_handle, key, min, max ) 
       when is_record( connection_handle, ConnectionHandle )
@@ -985,8 +999,9 @@ defmodule RedisEx.Client do
        and is_binary( key ) 
        and is_binary( increment )
        and is_binary( member ) do
-    command_list = [ "ZINCRBY", key, increment, member ]
-    case Connection.process( connection_handle.handle, command_list ) do
+    result = [ "ZINCRBY", key, increment, member ]
+            |> process( connection_handle.handle )
+    case result do
       "+inf" -> "+inf"
       "-inf" -> "-inf"
       bin    -> binary_to_number( bin )
@@ -996,7 +1011,7 @@ defmodule RedisEx.Client do
   def zincrby( connection_handle, key, increment, member ) 
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) 
-       and ( is_integer( increment ) or is_float( increment ) )
+       and is_number( increment )
        and is_binary( member ) do
     zincrby( connection_handle, key, number_to_binary( increment ), member )
   end
@@ -1022,8 +1037,8 @@ defmodule RedisEx.Client do
     end
 
     command_list = [ "ZINTERSTORE", destination, integer_to_binary( length(key_list) ) | key_list ]
-    command_list = :lists.append( command_list, opt_list )
-    Connection.process( connection_handle.handle, command_list )
+    :lists.append( command_list, opt_list )
+    |> process( connection_handle.handle )
   end
 
   def zrange( connection_handle, key, range_start, range_end, opts \\ [] )
@@ -1037,8 +1052,8 @@ defmodule RedisEx.Client do
       opt_list = [ "WITHSCORES" | opt_list ]
     end
 
-    command_list = [ "ZRANGE", key, integer_to_binary( range_start ), integer_to_binary( range_end ) | opt_list ]
-    result = Connection.process( connection_handle.handle, command_list )
+    result = [ "ZRANGE", key, integer_to_binary( range_start ), integer_to_binary( range_end ) | opt_list ]
+             |> process( connection_handle.handle )
 
 
     if opts[:withscores] do
@@ -1069,8 +1084,8 @@ defmodule RedisEx.Client do
       opt_list = [ "WITHSCORES" | opt_list ]
     end
 
-    command_list = [ "ZRANGEBYSCORE", key, min, max | opt_list ]
-    result = Connection.process( connection_handle.handle, command_list )
+    result = [ "ZRANGEBYSCORE", key, min, max | opt_list ]
+             |> process( connection_handle.handle )
 
     if opts[:withscores] do
       Enum.chunk( result, 2 )
@@ -1098,8 +1113,8 @@ defmodule RedisEx.Client do
   def zrank( connection_handle, key, member )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key ) do
-    command_list = [ "ZRANK", key, member ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "ZRANK", key, member ]
+    |> process( connection_handle.handle )
   end
 
   def zrem( connection_handle, key, member_list )
@@ -1107,8 +1122,8 @@ defmodule RedisEx.Client do
        and is_binary( key )
        and is_list( member_list ) 
        and length( member_list ) > 0 do
-    command_list = [ "ZREM", key | member_list ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "ZREM", key | member_list ]
+    |> process( connection_handle.handle )
   end
 
   def zremrangebyrank( connection_handle, key, range_start, range_end )
@@ -1116,8 +1131,8 @@ defmodule RedisEx.Client do
        and is_binary( key ) 
        and is_integer( range_start ) 
        and is_integer( range_end ) do
-    command_list = [ "ZREMRANGEBYRANK", key, integer_to_binary( range_start), integer_to_binary( range_end ) ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "ZREMRANGEBYRANK", key, integer_to_binary( range_start), integer_to_binary( range_end ) ]
+    |> process( connection_handle.handle )
   end
 
   def zremrangebyscore( connection_handle, key, min, max )
@@ -1125,8 +1140,8 @@ defmodule RedisEx.Client do
        and is_binary( key )
        and is_binary( min ) 
        and is_binary( max ) do
-    command_list = [ "ZREMRANGEBYSCORE", key, min, max ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "ZREMRANGEBYSCORE", key, min, max ]
+    |> process( connection_handle.handle )
   end
 
   def zremrangebyscore( connection_handle, key, min, max )
@@ -1148,8 +1163,8 @@ defmodule RedisEx.Client do
       opt_list = [ "WITHSCORES" | opt_list ] 
     end
 
-    command_list = [ "ZREVRANGE", key, integer_to_binary(range_start), integer_to_binary(range_end) | opt_list ]
-    result = Connection.process( connection_handle.handle, command_list )
+    result = [ "ZREVRANGE", key, integer_to_binary(range_start), integer_to_binary(range_end) | opt_list ]
+             |> process( connection_handle.handle )
     if opts[:withscores] do
       Enum.chunk( result, 2 )
         |> Enum.map( fn( [x, "+inf"] ) -> [x, "+inf"]
@@ -1178,8 +1193,8 @@ defmodule RedisEx.Client do
       opt_list = [ "WITHSCORES" | opt_list ]
     end
 
-    command_list = [ "ZREVRANGEBYSCORE", key, max, min | opt_list ]
-    result = Connection.process( connection_handle.handle, command_list )
+    result = [ "ZREVRANGEBYSCORE", key, max, min | opt_list ]
+             |> process( connection_handle.handle )
     if opts[:withscores] do
       Enum.chunk( result, 2 )
         |> Enum.map( fn( [x, "+inf"] ) -> [x, "+inf"]
@@ -1204,8 +1219,8 @@ defmodule RedisEx.Client do
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key )
        and is_binary( member ) do
-    command_list = [ "ZREVRANK", key, member ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "ZREVRANK", key, member ]
+    |> process( connection_handle.handle )
   end
 
   def zscan( connection_handle, key, cursor, opts \\ [] )
@@ -1216,8 +1231,8 @@ defmodule RedisEx.Client do
     if :count in opts, do: opt_list = [ "COUNT", opts[:count] | opt_list ]
     if :match in opts, do: opt_list = [ "MATCH", opts[:match] | opt_list ]
 
-    command_list = [ "ZSCAN", cursor | opt_list ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "ZSCAN", cursor | opt_list ]
+    |> process( connection_handle.handle )
   end
 
 
@@ -1225,8 +1240,9 @@ defmodule RedisEx.Client do
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( key )
        and is_binary( member ) do
-    command_list = [ "ZSCORE", key, member ]
-    case Connection.process( connection_handle.handle, command_list ) do
+    result = [ "ZSCORE", key, member ]
+             |> process( connection_handle.handle )
+    case result do
       nil -> nil
       x   -> binary_to_number( x )
     end
@@ -1253,8 +1269,8 @@ defmodule RedisEx.Client do
     end
 
     command_list = [ "ZUNIONSTORE", destination, integer_to_binary( length(key_list) ) | key_list ]
-    command_list = :lists.append( command_list, opt_list )
-    Connection.process( connection_handle.handle, command_list )
+    :lists.append( command_list, opt_list )
+    |> process( connection_handle.handle )
   end
 
 
@@ -1262,82 +1278,82 @@ defmodule RedisEx.Client do
   #TODO: Implement these
   # def psubscribe( _client, _pattern ) do
   #   command_list = []
-  #   Connection.process( connection_handle.handle, command_list )
+  #   |> process( connection_handle.handle )
   # end
   # def psubscribe( _client, _pattern_list ) do
   #   command_list = []
-  #   Connection.process( connection_handle.handle, command_list )
+  #   |> process( connection_handle.handle )
   # end
   # def pubsub( _client, :channels ) do
   #   command_list = []
-  #   Connection.process( connection_handle.handle, command_list )
+  #   |> process( connection_handle.handle )
   # end
   # def pubsub( _client, :channels, _pattern ) do
   #   command_list = []
-  #   Connection.process( connection_handle.handle, command_list )
+  #   |> process( connection_handle.handle )
   # end
   # def pubsub( _client, :numsub, channel ) when is_binary( channel ) do
   #   command_list = []
-  #   Connection.process( connection_handle.handle, command_list )
+  #   |> process( connection_handle.handle )
   # end
   # def pubsub( _client, :numsub, channel_list ) when is_list( channel_list ) do
   #   command_list = []
-  #   Connection.process( connection_handle.handle, command_list )
+  #   |> process( connection_handle.handle )
   # end
   # def pubsub( _client, :numpat ) do
   #   command_list = []
-  #   Connection.process( connection_handle.handle, command_list )
+  #   |> process( connection_handle.handle )
   # end
   # def punsubscribe( _client, _pattern ) do
   #   command_list = []
-  #   Connection.process( connection_handle.handle, command_list )
+  #   |> process( connection_handle.handle )
   # end
   # def punsubscribe( _client, _pattern_list ) do
   #   command_list = []
-  #   Connection.process( connection_handle.handle, command_list )
+  #   |> process( connection_handle.handle )
   # end
   # def subscribe( _client, _channel ) do
   #   command_list = []
-  #   Connection.process( connection_handle.handle, command_list )
+  #   |> process( connection_handle.handle )
   # end
   # def subscribe( _client, _channel_list ) do
   #   command_list = []
-  #   Connection.process( connection_handle.handle, command_list )
+  #   |> process( connection_handle.handle )
   # end
   # def unsubscribe( _client, _channel ) do
   #   command_list = []
-  #   Connection.process( connection_handle.handle, command_list )
+  #   |> process( connection_handle.handle )
   # end
   # def unsubscribe( _client, _channel_list ) do
   #   command_list = []
-  #   Connection.process( connection_handle.handle, command_list )
+  #   |> process( connection_handle.handle )
   # end
 
   #TODO: Implement these
   # Transactions
   # def discard( _client ) do
   #   command_list = []
-  #   Connection.process( connection_handle.handle, command_list )
+  #   |> process( connection_handle.handle )
   # end
   # def exec( _client ) do
   #   command_list = []
-  #   Connection.process( connection_handle.handle, command_list )
+  #   |> process( connection_handle.handle )
   # end
   # def multi( _client ) do
   #   command_list = []
-  #   Connection.process( connection_handle.handle, command_list )
+  #   |> process( connection_handle.handle )
   # end
   # def unwatch( _client ) do
   #   command_list = []
-  #   Connection.process( connection_handle.handle, command_list )
+  #   |> process( connection_handle.handle )
   # end
   # def watch( _client, _key ) do
   #   command_list = []
-  #   Connection.process( connection_handle.handle, command_list )
+  #   |> process( connection_handle.handle )
   # end
   # def watch( _client, _key_list ) do
   #   command_list = []
-  #   Connection.process( connection_handle.handle, command_list )
+  #   |> process( connection_handle.handle )
   # end
 
   # Scripting
@@ -1347,8 +1363,8 @@ defmodule RedisEx.Client do
        and is_list( key_list ) 
        and is_list( arg_list ) do
     key_arg_list = :lists.append( key_list, arg_list )
-    command_list = [ "EVAL", script, integer_to_binary( length( key_list ) ) | key_arg_list ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "EVAL", script, integer_to_binary( length( key_list ) ) | key_arg_list ]
+    |> process( connection_handle.handle )
   end
 
   def evalsha( connection_handle, sha_digest, key_list, arg_list )
@@ -1357,35 +1373,35 @@ defmodule RedisEx.Client do
        and is_list( key_list )
        and is_list( arg_list ) do
     key_arg_list = :lists.append( key_list, arg_list )
-    command_list = [ "EVALSHA", sha_digest, integer_to_binary( length( key_list ) ) | key_arg_list ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "EVALSHA", sha_digest, integer_to_binary( length( key_list ) ) | key_arg_list ]
+    |> process( connection_handle.handle )
   end
 
   def script_exists( connection_handle, script_list )
       when is_record( connection_handle, ConnectionHandle )
        and is_list( script_list )
        and length( script_list ) > 0 do
-    command_list = [ "SCRIPT", "EXISTS" | script_list ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "SCRIPT", "EXISTS" | script_list ]
+    |> process( connection_handle.handle )
   end
 
   def script_flush( connection_handle )
       when is_record( connection_handle, ConnectionHandle ) do
-    command_list = [ "SCRIPT", "FLUSH" ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "SCRIPT", "FLUSH" ]
+    |> process( connection_handle.handle )
   end
 
   def script_kill( connection_handle )
       when is_record( connection_handle, ConnectionHandle ) do
-    command_list = [ "SCRIPT", "KILL" ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "SCRIPT", "KILL" ]
+    |> process( connection_handle.handle )
   end
 
   def script_load( connection_handle, script )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( script ) do
-    command_list = [ "SCRIPT", "LOAD", script ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "SCRIPT", "LOAD", script ]
+    |> process( connection_handle.handle )
   end
 
   
@@ -1393,214 +1409,214 @@ defmodule RedisEx.Client do
   def auth( connection_handle, password )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( password ) do
-    command_list = [ "AUTH", password ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "AUTH", password ]
+    |> process( connection_handle.handle )
   end
 
   def echo( connection_handle, message )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( message ) do
-    command_list = [ "ECHO", message ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "ECHO", message ]
+    |> process( connection_handle.handle )
   end
 
   def ping( connection_handle )
       when is_record( connection_handle, ConnectionHandle ) do
-    command_list = [ "PING" ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "PING" ]
+    |> process( connection_handle.handle )
   end
 
   def quit( connection_handle )
       when is_record( connection_handle, ConnectionHandle ) do
-    command_list = [ "QUIT" ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "QUIT" ]
+    |> process( connection_handle.handle )
   end
 
   def select( connection_handle, index )
       when is_record( connection_handle, ConnectionHandle )
        and is_integer( index )
        and index >= 0 do
-    command_list = [ "SELECT", integer_to_binary( index ) ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "SELECT", integer_to_binary( index ) ]
+    |> process( connection_handle.handle )
   end
 
 
   # Server
   def bgrewriteaof( connection_handle )
       when is_record( connection_handle, ConnectionHandle ) do
-    command_list = [ "BGREWRITEAOF" ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "BGREWRITEAOF" ]
+    |> process( connection_handle.handle )
   end
 
   def bgsave( connection_handle )
       when is_record( connection_handle, ConnectionHandle ) do
-    command_list = [ "BGSAVE" ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "BGSAVE" ]
+    |> process( connection_handle.handle )
   end
 
   def client_getname( connection_handle )
       when is_record( connection_handle, ConnectionHandle ) do
-    command_list = [ "CLIENT", "GETNAME" ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "CLIENT", "GETNAME" ]
+    |> process( connection_handle.handle )
   end
 
   def client_kill( connection_handle, ip, port )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( ip )
        and is_binary( port ) do
-    command_list = [ "CLIENT", "KILL", "#{ip}:#{port}" ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "CLIENT", "KILL", "#{ip}:#{port}" ]
+    |> process( connection_handle.handle )
   end
 
   def client_list( connection_handle )
       when is_record( connection_handle, ConnectionHandle ) do
-    command_list = [ "CLIENT", "LIST" ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "CLIENT", "LIST" ]
+    |> process( connection_handle.handle )
   end
 
   def client_pause( connection_handle, timeout )
       when is_record( connection_handle, ConnectionHandle )
        and is_integer( timeout )
        and timeout >= 0 do
-    command_list = [ "CLIENT", "PAUSE", integer_to_binary( timeout ) ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "CLIENT", "PAUSE", integer_to_binary( timeout ) ]
+    |> process( connection_handle.handle )
   end
 
   def client_setname( connection_handle, name )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( name ) do
-    command_list = [ "CLIENT", "SETNAME", name ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "CLIENT", "SETNAME", name ]
+    |> process( connection_handle.handle )
   end
 
   def config_get( connection_handle, parameter )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( parameter ) do
-    command_list = [ "CONFIG", "GET", parameter ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "CONFIG", "GET", parameter ]
+    |> process( connection_handle.handle )
   end
 
   def config_resetstat( connection_handle )
       when is_record( connection_handle, ConnectionHandle ) do
-    command_list = [ "CONFIG", "RESETSTAT" ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "CONFIG", "RESETSTAT" ]
+    |> process( connection_handle.handle )
   end
 
   def config_rewrite( connection_handle )
       when is_record( connection_handle, ConnectionHandle ) do
-    command_list = [ "CONFIG", "REWRITE" ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "CONFIG", "REWRITE" ]
+    |> process( connection_handle.handle )
   end
 
   def config_set( connection_handle, parameter, value )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( parameter )
        and ( is_binary( value ) or is_integer( value ) ) do
-    command_list = [ "CONFIG", "SET", parameter, value ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "CONFIG", "SET", parameter, value ]
+    |> process( connection_handle.handle )
   end
 
   def dbsize( connection_handle )
       when is_record( connection_handle, ConnectionHandle ) do
-    command_list = [ "DBSIZE" ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "DBSIZE" ]
+    |> process( connection_handle.handle )
   end
 
   def flushall( connection_handle )
       when is_record( connection_handle, ConnectionHandle ) do
-    command_list = [ "FLUSHALL" ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "FLUSHALL" ]
+    |> process( connection_handle.handle )
   end
 
   def flushdb( connection_handle )
       when is_record( connection_handle, ConnectionHandle ) do
-    command_list = [ "FLUSHDB" ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "FLUSHDB" ]
+    |> process( connection_handle.handle )
   end
 
   def info( connection_handle, section \\ :default )
       when is_record( connection_handle, ConnectionHandle )
        and section in [ :server, :clients, :memory, :persistence, :stats, :replication, :cpu, :commandstats, :cluster, :keyspace, :all, :default ] do
-    command_list = [ "INFO", atom_to_binary( section ) ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "INFO", atom_to_binary( section ) ]
+    |> process( connection_handle.handle )
   end
 
   def lastsave( connection_handle )
       when is_record( connection_handle, ConnectionHandle ) do
-    command_list = [ "LASTSAVE" ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "LASTSAVE" ]
+    |> process( connection_handle.handle )
   end
 
   def save( connection_handle )
       when is_record( connection_handle, ConnectionHandle ) do
-    command_list = [ "SAVE" ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "SAVE" ]
+    |> process( connection_handle.handle )
   end
 
   def shutdown( connection_handle )
       when is_record( connection_handle, ConnectionHandle ) do
-    command_list = [ "SHUTDOWN" ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "SHUTDOWN" ]
+    |> process( connection_handle.handle )
   end
 
   def shutdown( connection_handle, arg )
       when is_record( connection_handle, ConnectionHandle )
        and arg in [ :save, :nosave ] do
-    command_list = [ "SHUTDOWN", atom_to_binary( arg ) ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "SHUTDOWN", atom_to_binary( arg ) ]
+    |> process( connection_handle.handle )
   end
 
   def slaveof( connection_handle, host, port )
       when is_record( connection_handle, ConnectionHandle )
        and is_binary( host )
        and is_binary( port ) do
-    command_list = [ "SLAVEOF", host, port ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "SLAVEOF", host, port ]
+    |> process( connection_handle.handle )
   end
 
   def slaveof( connection_handle, :noone )
       when is_record( connection_handle, ConnectionHandle ) do
-    command_list = [ "SLAVEOF", "NO", "ONE" ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "SLAVEOF", "NO", "ONE" ]
+    |> process( connection_handle.handle )
   end
 
   def slowlog( connection_handle, :len )
       when is_record( connection_handle, ConnectionHandle ) do
-    command_list = [ "SLOWLOG", "LEN" ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "SLOWLOG", "LEN" ]
+    |> process( connection_handle.handle )
   end
 
   def slowlog( connection_handle, :get )
       when is_record( connection_handle, ConnectionHandle ) do
-    command_list = [ "SLOWLOG", "GET" ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "SLOWLOG", "GET" ]
+    |> process( connection_handle.handle )
   end
 
   def slowlog( connection_handle, :get, pos )
       when is_record( connection_handle, ConnectionHandle ) 
        and is_integer( pos ) do
-    command_list = [ "SLOWLOG", "GET", integer_to_binary( pos ) ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "SLOWLOG", "GET", integer_to_binary( pos ) ]
+    |> process( connection_handle.handle )
   end
 
   def slowlog( connection_handle, :reset )
       when is_record( connection_handle, ConnectionHandle ) do
-    command_list = [ "SLOWLOG", "RESET" ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "SLOWLOG", "RESET" ]
+    |> process( connection_handle.handle )
   end
 
   def slowlog( connection_handle, subcommand, arguments \\ [] )
       when is_record( connection_handle, ConnectionHandle )
        and subcommand in [ :get, :len, :reset ] 
        and is_list( arguments ) do
-    command_list = [ "SLOWLOG", atom_to_binary( subcommand ) | arguments ]
-    Connection.process( connection_handle.handle, command_list )
+    [ "SLOWLOG", atom_to_binary( subcommand ) | arguments ]
+    |> process( connection_handle.handle )
   end
 
   def time( connection_handle )
       when is_record( connection_handle, ConnectionHandle ) do
-    command_list = [ "TIME" ]
-    [ seconds, micros ] = Connection.process( connection_handle.handle, command_list )
+    [ seconds, micros ] = [ "TIME" ]
+                          |> process( connection_handle.handle )
     [ binary_to_integer( seconds ), binary_to_integer( micros ) ]
   end
 
